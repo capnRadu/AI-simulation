@@ -3,9 +3,12 @@ using UnityEngine;
 public class Blob : MonoBehaviour
 {
     private Rigidbody2D rb;
+    private BehaviourTree tree;
+    private PhysicsCommandBuffer physicsBuffer;
 
     [SerializeField] private float mass = 1f;
     public float Mass => mass;
+
     private float speed;
     private float baseSpeed = 20f;
     private float speedFactor = 0.001f; // how much speed decreases per unit mass
@@ -16,53 +19,97 @@ public class Blob : MonoBehaviour
     [SerializeField] private LayerMask foodMask;
     [SerializeField] private LayerMask preyMask;
 
-    private Transform currentTarget;
+    private Transform entityTarget;
     private Vector3 wanderTarget;
+    private Vector3 currentTargetPos;
+
+    private void Awake()
+    {
+        rb = GetComponent<Rigidbody2D>();
+        physicsBuffer = GetComponent<PhysicsCommandBuffer>();
+        speed = baseSpeed;
+
+        tree = new BehaviourTree("Blob Behaviour");
+
+        Selector rootSelector = new Selector("RootSelector");
+
+        // Chase prey sequence
+        Sequence chasePreySequence = new Sequence("ChasePreySequence");
+
+        chasePreySequence.AddChild(new Leaf("PreyNearby?", new Condition(() =>
+        {
+            entityTarget = FindClosestTarget(preyMask);
+            return entityTarget != null && entityTarget.GetComponent<Blob>().Mass < mass;
+        })));
+
+        chasePreySequence.AddChild(new Leaf("SetPreyTarget", new ActionStrategy(() =>
+        {
+            currentTargetPos = entityTarget.position;
+            Debug.Log("Chasing prey at " + currentTargetPos);
+        })));
+
+        chasePreySequence.AddChild(new Leaf("MoveToPrey", new MoveToTargetStrategy(rb, physicsBuffer, transform, () => currentTargetPos, speed, 0.2f)));
+
+        chasePreySequence.AddChild(new Leaf("ResetTarget", new ActionStrategy(() =>
+        {
+            entityTarget = null;
+        })));
+
+
+        // Chase food sequence
+        var chaseFoodSequence = new Sequence("ChaseFoodSequence");
+
+        chaseFoodSequence.AddChild(new Leaf("FoodNearby?", new Condition(() =>
+        {
+            entityTarget = FindClosestTarget(foodMask);
+            return entityTarget != null;
+        })));
+
+        chaseFoodSequence.AddChild(new Leaf("SetFoodTarget", new ActionStrategy(() =>
+        {
+            currentTargetPos = entityTarget.position;
+            Debug.Log("Chasing food at " + currentTargetPos);
+        })));
+
+        chaseFoodSequence.AddChild(new Leaf("MoveToFood", new MoveToTargetStrategy(rb, physicsBuffer, transform, () => currentTargetPos, speed, 0.2f)));
+
+        chaseFoodSequence.AddChild(new Leaf("ResetTarget", new ActionStrategy(() =>
+        {
+            entityTarget = null;
+        })));
+
+        // Wander sequence
+        var wanderSequence = new Sequence("WanderSequence");
+
+        wanderSequence.AddChild(new Leaf("NeedWanderTarget?", new Condition(() =>
+        {
+            return entityTarget == null || Vector3.Distance(transform.position, wanderTarget) <= 0.2f;
+        })));
+
+        wanderSequence.AddChild(new Leaf("PickWanderTarget", new ActionStrategy(() =>
+        {
+            wanderTarget = RandomPointInBounds(arenaCol.bounds);
+            currentTargetPos = wanderTarget;
+            Debug.Log("New wander target: " + wanderTarget);
+        })));
+
+        wanderSequence.AddChild(new Leaf("MoveToWanderTarget", new MoveToTargetStrategy(rb, physicsBuffer, transform, () => currentTargetPos, speed, 0.2f)));
+
+        rootSelector.AddChild(chasePreySequence);
+        rootSelector.AddChild(chaseFoodSequence);
+        rootSelector.AddChild(wanderSequence);
+
+        tree.AddChild(rootSelector);
+    }
 
     private void Start()
     {
-        rb = GetComponent<Rigidbody2D>();
         arenaCol = FindFirstObjectByType<GameManager>().GetComponent<BoxCollider2D>();
-        speed = baseSpeed;
     }
 
     private void Update()
     {
-        // Decide target based on chase priority
-        ChaseBehavior();
-
-        // Wander if no target
-        if (currentTarget == null && Vector3.Distance(transform.position, wanderTarget) <= 0.2f)
-        {
-            wanderTarget = RandomPointInBounds(arenaCol.bounds);
-        }
-    }
-
-    private void FixedUpdate()
-    {
-        Vector3 targetPos = currentTarget != null ? currentTarget.position : wanderTarget;
-        MoveTowards(targetPos);
-    }
-
-    // Chase food or prey
-    private void ChaseBehavior()
-    {
-        // If current target is gone, find a new one
-        if (currentTarget == null)
-        {
-            Transform foodTarget = FindClosestTarget(foodMask);
-            Transform preyTarget = FindClosestTarget(preyMask);
-
-            // Example priority: always go for prey first if exists
-            if (preyTarget != null)
-            {
-                currentTarget = preyTarget;
-            }
-            else if (foodTarget != null)
-            {
-                currentTarget = foodTarget;
-            }
-        }
+        tree.Process();
     }
 
     private Transform FindClosestTarget(LayerMask mask)
@@ -90,12 +137,6 @@ public class Blob : MonoBehaviour
         return closest;
     }
 
-    private void MoveTowards(Vector3 target)
-    {
-        Vector3 direction = (target - transform.position).normalized;
-        rb.MovePosition(transform.position + speed * Time.fixedDeltaTime * direction);
-    }
-
     private Vector3 RandomPointInBounds(Bounds bounds)
     {
         return new Vector3(Random.Range(bounds.min.x, bounds.max.x), Random.Range(bounds.min.y, bounds.max.y), 0f);
@@ -107,14 +148,12 @@ public class Blob : MonoBehaviour
         {
             ConsumeFood(1f);
             Destroy(collision.gameObject);
-            currentTarget = null;
         }
 
         if (collision.gameObject.layer == LayerMask.NameToLayer("Prey") && collision.gameObject.GetComponent<Blob>().Mass < mass)
         {
             ConsumeFood(5f);
             Destroy(collision.gameObject);
-            currentTarget = null;
         }
     }
 
