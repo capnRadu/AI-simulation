@@ -10,7 +10,7 @@ public class GameManager : MonoBehaviour
 
     private float foodSpawnInterval = 0.5f;
     private int initialFoodCount = 60;
-    private int blobsCount = 3;
+    private int blobsCount = 2;
 
     private void Start()
     {
@@ -19,6 +19,14 @@ public class GameManager : MonoBehaviour
         SpawnMultipleGameObjects(foodPrefab, initialFoodCount);
         SpawnMultipleGameObjects(blobPrefab, blobsCount);
         StartCoroutine(SpawnFoodRoutine());
+    }
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            InstantiateGameObject(blobPrefab);
+        }
     }
 
     private void SpawnMultipleGameObjects(GameObject prefab, int count)

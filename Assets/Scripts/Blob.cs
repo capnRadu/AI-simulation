@@ -10,8 +10,8 @@ public class Blob : MonoBehaviour
     public float Mass => mass;
 
     private float speed;
-    private float baseSpeed = 20f;
-    private float speedFactor = 0.001f; // how much speed decreases per unit mass
+    private float baseSpeed = 15f;
+    private float speedFactor = 0.003f; // how much speed decreases per unit mass
     private float scaleFactor = 0.1f; // how much scale increases per unit mass
 
     [SerializeField] private BoxCollider2D arenaCol;
@@ -31,55 +31,24 @@ public class Blob : MonoBehaviour
 
         tree = new BehaviourTree("Blob Behaviour");
 
-        Selector rootSelector = new Selector("RootSelector");
-
-        // Chase prey sequence
-        Sequence chasePreySequence = new Sequence("ChasePreySequence");
-
-        chasePreySequence.AddChild(new Leaf("PreyNearby?", new Condition(() =>
-        {
-            entityTarget = FindClosestTarget(preyMask);
-            return entityTarget != null && entityTarget.GetComponent<Blob>().Mass < mass;
-        })));
-
-        chasePreySequence.AddChild(new Leaf("SetPreyTarget", new ActionStrategy(() =>
-        {
-            currentTargetPos = entityTarget.position;
-            Debug.Log("Chasing prey at " + currentTargetPos);
-        })));
-
-        chasePreySequence.AddChild(new Leaf("MoveToPrey", new MoveToTargetStrategy(rb, physicsBuffer, transform, () => currentTargetPos, speed, 0.2f)));
-
-        chasePreySequence.AddChild(new Leaf("ResetTarget", new ActionStrategy(() =>
-        {
-            entityTarget = null;
-        })));
-
+        PrioritySelector rootSelector = new PrioritySelector("RootSelector");
 
         // Chase food sequence
-        var chaseFoodSequence = new Sequence("ChaseFoodSequence");
+        var chaseFoodSequence = new Sequence("ChaseFoodSequence", 3);
 
-        chaseFoodSequence.AddChild(new Leaf("FoodNearby?", new Condition(() =>
-        {
-            entityTarget = FindClosestTarget(foodMask);
-            return entityTarget != null;
-        })));
-
-        chaseFoodSequence.AddChild(new Leaf("SetFoodTarget", new ActionStrategy(() =>
-        {
-            currentTargetPos = entityTarget.position;
-            Debug.Log("Chasing food at " + currentTargetPos);
-        })));
-
+        chaseFoodSequence.AddChild(new Leaf("FindFood", new FindAndSetTargetStrategy(this, foodMask, false)));
         chaseFoodSequence.AddChild(new Leaf("MoveToFood", new MoveToTargetStrategy(rb, physicsBuffer, transform, () => currentTargetPos, speed, 0.2f)));
+        chaseFoodSequence.AddChild(new Leaf("ResetTarget", new ActionStrategy(ClearTarget)));
 
-        chaseFoodSequence.AddChild(new Leaf("ResetTarget", new ActionStrategy(() =>
-        {
-            entityTarget = null;
-        })));
+        // Chase prey sequence
+        Sequence chasePreySequence = new Sequence("ChasePreySequence", 2);
+
+        chasePreySequence.AddChild(new Leaf("FindPrey", new FindAndSetTargetStrategy(this, preyMask, true)));
+        chasePreySequence.AddChild(new Leaf("MoveToPrey", new MoveToTargetStrategy(rb, physicsBuffer, transform, () => currentTargetPos, speed, 0.2f)));
+        chasePreySequence.AddChild(new Leaf("ResetTarget", new ActionStrategy(ClearTarget)));
 
         // Wander sequence
-        var wanderSequence = new Sequence("WanderSequence");
+        var wanderSequence = new Sequence("WanderSequence", 1);
 
         wanderSequence.AddChild(new Leaf("NeedWanderTarget?", new Condition(() =>
         {
@@ -90,7 +59,6 @@ public class Blob : MonoBehaviour
         {
             wanderTarget = RandomPointInBounds(arenaCol.bounds);
             currentTargetPos = wanderTarget;
-            Debug.Log("New wander target: " + wanderTarget);
         })));
 
         wanderSequence.AddChild(new Leaf("MoveToWanderTarget", new MoveToTargetStrategy(rb, physicsBuffer, transform, () => currentTargetPos, speed, 0.2f)));
@@ -112,7 +80,7 @@ public class Blob : MonoBehaviour
         tree.Process();
     }
 
-    private Transform FindClosestTarget(LayerMask mask)
+    public Transform FindClosestTarget(LayerMask mask)
     {
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, detectionRadius, mask);
 
@@ -135,6 +103,21 @@ public class Blob : MonoBehaviour
         }
 
         return closest;
+    }
+
+    public void SetTarget(Transform target)
+    {
+        entityTarget = target;
+
+        if (entityTarget != null)
+        {
+            currentTargetPos = entityTarget.position;
+        }
+    }
+
+    public void ClearTarget()
+    {
+        entityTarget = null;
     }
 
     private Vector3 RandomPointInBounds(Bounds bounds)

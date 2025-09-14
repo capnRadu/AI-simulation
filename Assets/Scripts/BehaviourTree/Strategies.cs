@@ -41,6 +41,53 @@ public class Condition : IStrategy
     }
 }
 
+public class FindAndSetTargetStrategy : IStrategy
+{
+    private readonly Blob blob;
+    private readonly LayerMask mask;
+    private readonly bool preyCheck;
+
+    public FindAndSetTargetStrategy(Blob blob, LayerMask mask, bool preyCheck = false)
+    {
+        this.blob = blob;
+        this.mask = mask;
+        this.preyCheck = preyCheck;
+    }
+
+    public Node.Status Process()
+    {
+        Transform target = blob.FindClosestTarget(mask);
+
+        if (target == null)
+        {
+            blob.ClearTarget();
+            return Node.Status.Failure;
+        }
+        else 
+        {
+            Blob targetBlob = target.GetComponent<Blob>();
+
+            if (preyCheck && targetBlob)
+            {
+                if (targetBlob.Mass >= blob.Mass)
+                {
+                    blob.ClearTarget();
+                    return Node.Status.Failure;
+                }
+            }
+        }
+
+        // Assign safely
+        blob.SetTarget(target);
+        return Node.Status.Success;
+    }
+
+    public void Reset()
+    {
+        // nothing to reset
+    }
+}
+
 public class MoveToTargetStrategy : IStrategy
 {
     readonly Rigidbody2D rb;
@@ -75,7 +122,6 @@ public class MoveToTargetStrategy : IStrategy
 
         if (distance <= stoppingDistance)
         {
-            Debug.Log("Arrived at target: " + targetPos);
             return Node.Status.Success;
         }
 
