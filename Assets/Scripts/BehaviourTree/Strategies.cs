@@ -118,16 +118,16 @@ public class MoveToTargetStrategy : IStrategy
 {
     readonly Rigidbody2D rb;
     readonly PhysicsCommandBuffer physicsBuffer;
-    readonly Transform entity;
+    readonly Transform self;
     readonly Func<Vector3> getTargetPos;
     readonly float speed;
     readonly float stoppingDistance;
 
-    public MoveToTargetStrategy(Rigidbody2D rb, PhysicsCommandBuffer physicsBuffer, Transform entity, Func<Vector3> getTargetPos, float speed, float stoppingDistance)
+    public MoveToTargetStrategy(Rigidbody2D rb, PhysicsCommandBuffer physicsBuffer, Transform self, Func<Vector3> getTargetPos, float speed, float stoppingDistance)
     {
         this.rb = rb;
         this.physicsBuffer = physicsBuffer;
-        this.entity = entity;
+        this.self = self;
         this.getTargetPos = getTargetPos;
         this.speed = speed;
         this.stoppingDistance = stoppingDistance;
@@ -143,8 +143,8 @@ public class MoveToTargetStrategy : IStrategy
             return Node.Status.Failure;
         }
 
-        var direction = (targetPos - entity.position).normalized;
-        var distance = Vector3.Distance(entity.position, targetPos);
+        var direction = (targetPos - self.position).normalized;
+        var distance = Vector3.Distance(self.position, targetPos);
 
         if (distance <= stoppingDistance)
         {
@@ -153,7 +153,7 @@ public class MoveToTargetStrategy : IStrategy
 
         physicsBuffer.Queue(() =>
         {
-            rb.MovePosition(entity.position + speed * Time.fixedDeltaTime * direction);
+            rb.MovePosition(self.position + speed * Time.fixedDeltaTime * direction);
         });
 
         return Node.Status.Running;
