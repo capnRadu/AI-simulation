@@ -41,13 +41,41 @@ public class Condition : IStrategy
     }
 }
 
-public class FindAndSetTargetStrategy : IStrategy
+public class FindAndSetWanderTargetStrategy : IStrategy
+{
+    private readonly Blob blob;
+    private readonly Transform chaseTarget;
+    private readonly Func<Vector3> getTargetPos;
+
+    public FindAndSetWanderTargetStrategy(Blob blob, Transform chaseTarget, Func<Vector3> getTargetPos)
+    {
+        this.blob = blob;
+        this.chaseTarget = chaseTarget;
+        this.getTargetPos = getTargetPos;
+    }
+
+    public Node.Status Process()
+    {
+        Vector3 targetPos = getTargetPos();
+
+        if (chaseTarget == null || Vector3.Distance(blob.transform.position, targetPos) <= 0.2f)
+        {
+            Vector3 target = blob.FindRandomPointInBounds(blob.ArenaColBounds);
+            blob.SetWanderTarget(target);
+            return Node.Status.Success;
+        }
+
+        return Node.Status.Failure;
+    }
+}
+
+public class FindAndSetChaseTargetStrategy : IStrategy
 {
     private readonly Blob blob;
     private readonly LayerMask mask;
     private readonly bool preyCheck;
 
-    public FindAndSetTargetStrategy(Blob blob, LayerMask mask, bool preyCheck = false)
+    public FindAndSetChaseTargetStrategy(Blob blob, LayerMask mask, bool preyCheck = false)
     {
         this.blob = blob;
         this.mask = mask;
@@ -56,11 +84,11 @@ public class FindAndSetTargetStrategy : IStrategy
 
     public Node.Status Process()
     {
-        Transform target = blob.FindClosestTarget(mask);
+        Transform target = blob.FindClosestChaseTarget(mask);
 
         if (target == null)
         {
-            blob.ClearTarget();
+            blob.ClearChaseTarget();
             return Node.Status.Failure;
         }
         else 
@@ -71,14 +99,14 @@ public class FindAndSetTargetStrategy : IStrategy
             {
                 if (targetBlob.Mass >= blob.Mass)
                 {
-                    blob.ClearTarget();
+                    blob.ClearChaseTarget();
                     return Node.Status.Failure;
                 }
             }
         }
 
         // Assign safely
-        blob.SetTarget(target);
+        blob.SetChaseTarget(target);
         return Node.Status.Success;
     }
 
