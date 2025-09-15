@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 5429930320487431695}
   - component: {fileID: 3116919646006405625}
   - component: {fileID: 4932468063441350804}
+  - component: {fileID: 6010469847132521856}
   - component: {fileID: 8720514460412117595}
   - component: {fileID: 7551490877842824752}
   m_Layer: 7
@@ -127,6 +128,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7de43c47ce918894590c610535a3351b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PhysicsCommandBuffer
+--- !u!114 &6010469847132521856
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1496684683162619696}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c0b3b5a4ff06ad46b6de9067be929b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Wobble
+  wobbleSpeed: 11.5
+  wobbleAmount: 0.7
 --- !u!50 &8720514460412117595
 Rigidbody2D:
   serializedVersion: 5

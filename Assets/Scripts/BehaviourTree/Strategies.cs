@@ -103,7 +103,6 @@ public class FindAndSetChaseTargetStrategy : IStrategy
             }
         }
 
-        // Assign safely
         blob.SetChaseTarget(target);
         return Node.Status.Success;
     }

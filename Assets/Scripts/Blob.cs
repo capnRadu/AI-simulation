@@ -5,6 +5,7 @@ public class Blob : MonoBehaviour
     private Rigidbody2D rb;
     private BehaviourTree tree;
     private PhysicsCommandBuffer physicsBuffer;
+    private Wobble wobble;
 
     [SerializeField] private float mass = 1f;
     public float Mass => mass;
@@ -28,6 +29,7 @@ public class Blob : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         physicsBuffer = GetComponent<PhysicsCommandBuffer>();
+        wobble = GetComponent<Wobble>();
         speed = baseSpeed;
 
         tree = new BehaviourTree("Blob Behaviour");
@@ -156,6 +158,7 @@ public class Blob : MonoBehaviour
 
         float newScale = 1f + mass * scaleFactor;
         transform.localScale = new Vector3(newScale, newScale, 1f);
+        wobble.UpdateScale(transform);
 
         speed = baseSpeed / (1f + mass * speedFactor);
     }
