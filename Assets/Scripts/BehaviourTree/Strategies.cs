@@ -88,7 +88,6 @@ public class FindAndSetChaseTargetStrategy : IStrategy
 
         if (target == null)
         {
-            blob.ClearChaseTarget();
             return Node.Status.Failure;
         }
         else 
@@ -99,7 +98,6 @@ public class FindAndSetChaseTargetStrategy : IStrategy
             {
                 if (targetBlob.Mass >= blob.Mass)
                 {
-                    blob.ClearChaseTarget();
                     return Node.Status.Failure;
                 }
             }
