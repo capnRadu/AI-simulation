@@ -18,11 +18,13 @@ public class Blob : MonoBehaviour
     [SerializeField] private BoxCollider2D arenaCol;
     public Bounds ArenaColBounds => arenaCol.bounds;
     [SerializeField] private float detectionRadius = 10f;
+    public float DetectionRadius => detectionRadius;
     [SerializeField] private LayerMask foodMask;
     [SerializeField] private LayerMask preyMask;
 
     private Transform chaseTarget;
     private Vector3 wanderTarget;
+    private Vector3 fleeTarget;
     private Vector3 currentTargetPos;
 
     private void Awake()
@@ -35,6 +37,12 @@ public class Blob : MonoBehaviour
         tree = new BehaviourTree("Blob Behaviour");
 
         PrioritySelector rootSelector = new PrioritySelector("RootSelector");
+
+        // Flee sequence
+        var fleeSequence = new Sequence("FleeSequence", 3);
+
+        fleeSequence.AddChild(new Leaf("FindThreat", new FindAndSetFleeTargetStrategy(this, preyMask)));
+        fleeSequence.AddChild(new Leaf("Flee", new MoveToTargetStrategy(rb, physicsBuffer, transform, () => currentTargetPos, speed, 0.2f)));
 
         // Chase food sequence
         var chaseFoodSequence = new Sequence("ChaseFoodSequence", 2);
@@ -56,8 +64,9 @@ public class Blob : MonoBehaviour
         wanderSequence.AddChild(new Leaf("FindWanderTarget", new FindAndSetWanderTargetStrategy(this, chaseTarget, () => currentTargetPos)));
         wanderSequence.AddChild(new Leaf("MoveToWanderTarget", new MoveToTargetStrategy(rb, physicsBuffer, transform, () => currentTargetPos, speed, 0.2f)));
 
-        rootSelector.AddChild(chasePreySequence);
+        rootSelector.AddChild(fleeSequence);
         rootSelector.AddChild(chaseFoodSequence);
+        rootSelector.AddChild(chasePreySequence);
         rootSelector.AddChild(wanderSequence);
 
         tree.AddChild(rootSelector);
@@ -122,6 +131,42 @@ public class Blob : MonoBehaviour
     {
         wanderTarget = target;
         currentTargetPos = wanderTarget;
+    }
+
+    public Transform FindBiggestThreat(LayerMask mask)
+    {
+        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, detectionRadius, mask);
+
+        if (hits.Length == 0) return null;
+
+        Transform biggestThreat = null;
+        float closestDistance = Mathf.Infinity;
+
+        foreach (var hit in hits)
+        {
+            if (hit.gameObject == this.gameObject) continue;
+
+            Blob other = hit.GetComponent<Blob>();
+
+            if (other != null && other.Mass > mass)
+            {
+                float dist = Vector3.Distance(transform.position, other.transform.position);
+
+                if (dist < closestDistance)
+                {
+                    closestDistance = dist;
+                    biggestThreat = other.transform;
+                }
+            }
+        }
+
+        return biggestThreat;
+    }
+
+    public void SetFleeTarget(Vector3 target)
+    {
+        fleeTarget = target;
+        currentTargetPos = fleeTarget;
     }
 
     private void OnCollisionEnter2D(Collision2D collision)

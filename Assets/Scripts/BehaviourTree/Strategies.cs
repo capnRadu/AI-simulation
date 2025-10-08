@@ -41,6 +41,49 @@ public class Condition : IStrategy
     }
 }
 
+public class FindAndSetFleeTargetStrategy : IStrategy
+{
+    private readonly Blob blob;
+    private readonly LayerMask mask;
+
+    public FindAndSetFleeTargetStrategy(Blob blob, LayerMask blobMask)
+    {
+        this.blob = blob;
+        this.mask = blobMask;
+    }
+
+    public Node.Status Process()
+    {
+        Transform biggestThreat = blob.FindBiggestThreat(mask);
+
+        if (biggestThreat == null)
+        {
+            return Node.Status.Failure;
+        }
+
+        Vector3 directionAway = (blob.transform.position - biggestThreat.position).normalized;
+        Vector3 fleePoint = blob.transform.position + 0.8f * blob.DetectionRadius * directionAway;
+
+        var bounds = blob.ArenaColBounds;
+        fleePoint.x = Mathf.Clamp(fleePoint.x, bounds.min.x + 1f, bounds.max.x - 1f);
+        fleePoint.y = Mathf.Clamp(fleePoint.y, bounds.min.y + 1f, bounds.max.y - 1f);
+
+        if (Vector3.Distance(fleePoint, blob.transform.position) < 0.5f)
+        {
+            Vector3 inward = (bounds.center - blob.transform.position).normalized;
+            fleePoint += inward * 2f;
+        }
+
+        blob.SetFleeTarget(fleePoint);
+        return Node.Status.Success;
+    }
+
+    public void Reset()
+    {
+        // nothing to reset
+    }
+}
+
 public class FindAndSetWanderTargetStrategy : IStrategy
 {
     private readonly Blob blob;
@@ -66,6 +109,11 @@ public class FindAndSetWanderTargetStrategy : IStrategy
         }
 
         return Node.Status.Failure;
+    }
+
+    public void Reset()
+    {
+        // nothing to reset
     }
 }
 
