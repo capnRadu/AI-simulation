@@ -41,6 +41,48 @@ public class Condition : IStrategy
     }
 }
 
+public class ThrowFoodStrategy : IStrategy
+{
+    private Blob blob;
+    private float scaleFactor;
+    private float speedFactor;
+    private float baseSpeed;
+    private Wobble wobble;
+
+    public ThrowFoodStrategy(Blob blob, float scaleFactor, float speedFactor, float baseSpeed, Wobble wobble)
+    {
+        this.blob = blob;
+        this.scaleFactor = scaleFactor;
+        this.speedFactor = speedFactor;
+        this.baseSpeed = baseSpeed;
+        this.wobble = wobble;
+    }
+
+    public Node.Status Process()
+    {
+        if (blob.Mass <= 1f) return Node.Status.Failure;
+
+        int spawnCount = UnityEngine.Random.Range(1, 15);
+
+        for (int i = 0; i < spawnCount; i++)
+        {
+            blob.EjectFood();
+
+            float newScale = 1f + blob.Mass * scaleFactor;
+            blob.transform.localScale = new Vector3(newScale, newScale, 1f);
+            wobble.UpdateScale(blob.transform);
+            blob.Speed = baseSpeed / (1f + blob.Mass * speedFactor);
+        }
+
+        return Node.Status.Success;
+    }
+
+    public void Reset()
+    {
+        // nothing to reset
+    }
+}
+
 public class FindAndSetFleeTargetStrategy : IStrategy
 {
     private readonly Blob blob;

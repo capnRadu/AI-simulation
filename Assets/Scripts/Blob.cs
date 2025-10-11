@@ -8,9 +8,18 @@ public class Blob : MonoBehaviour
     private Wobble wobble;
 
     [SerializeField] private float mass = 1f;
-    public float Mass => mass;
+    public float Mass
+    {
+        get { return mass; }
+        set { mass = value; }
+    }
 
     private float speed;
+    public float Speed
+    {
+        get { return speed; }
+        set { speed = value; }
+    }
     private float baseSpeed = 15f;
     private float speedFactor = 0.003f; // how much speed decreases per unit mass
     private float scaleFactor = 0.1f; // how much scale increases per unit mass
@@ -21,11 +30,15 @@ public class Blob : MonoBehaviour
     public float DetectionRadius => detectionRadius;
     [SerializeField] private LayerMask foodMask;
     [SerializeField] private LayerMask preyMask;
+    [SerializeField] private GameObject massPrefab;
 
     private Transform chaseTarget;
     private Vector3 wanderTarget;
     private Vector3 fleeTarget;
     private Vector3 currentTargetPos;
+
+    private float lastThrowCheckTime;
+    private float throwCheckInterval = 2f;
 
     private void Awake()
     {
@@ -58,6 +71,12 @@ public class Blob : MonoBehaviour
         chasePreySequence.AddChild(new Leaf("MoveToPrey", new MoveToTargetStrategy(rb, physicsBuffer, transform, () => currentTargetPos, speed, 0.2f)));
         chasePreySequence.AddChild(new Leaf("ResetTarget", new ActionStrategy(ClearChaseTarget)));
 
+        // Throw food sequence
+        var throwFoodSequence = new Sequence("ThrowFoodSequence", 2);
+        throwFoodSequence.AddChild(new Leaf("CheckMass", new Condition(() => mass > 1f)));
+        throwFoodSequence.AddChild(new Leaf("CheckRandomness", new Condition(() => ShouldThrowFood(0.2f))));
+        throwFoodSequence.AddChild(new Leaf("ThrowFood", new ThrowFoodStrategy(this, scaleFactor, speedFactor, baseSpeed, wobble)));
+
         // Wander sequence
         var wanderSequence = new Sequence("WanderSequence", 1);
 
@@ -67,6 +86,7 @@ public class Blob : MonoBehaviour
         rootSelector.AddChild(fleeSequence);
         rootSelector.AddChild(chaseFoodSequence);
         rootSelector.AddChild(chasePreySequence);
+        rootSelector.AddChild(throwFoodSequence);
         rootSelector.AddChild(wanderSequence);
 
         tree.AddChild(rootSelector);
@@ -169,6 +189,23 @@ public class Blob : MonoBehaviour
         currentTargetPos = fleeTarget;
     }
 
+    private bool ShouldThrowFood(float probability)
+    {
+        if (Time.time - lastThrowCheckTime < throwCheckInterval) return false;
+        
+        lastThrowCheckTime = Time.time;
+        return Random.value < probability;
+    }
+
+    public void EjectFood()
+    {
+        GameObject ejectedMass = Instantiate(massPrefab, transform.position, Quaternion.identity);
+        MassForce massForce = ejectedMass.GetComponent<MassForce>();
+        massForce.SetupEjectedMass(true, currentTargetPos);
+
+        mass -= massForce.Mass;
+    }
+
     private void OnCollisionEnter2D(Collision2D collision)
     {
         GameObject other = collision.gameObject;
@@ -176,7 +213,7 @@ public class Blob : MonoBehaviour
 
         if (otherLayer == LayerMask.NameToLayer("Food"))
         {
-            HandleConsumption(other, 1f);
+            HandleConsumption(other, other.GetComponent<MassForce>().Mass);
         }
         else if (otherLayer == LayerMask.NameToLayer("Prey"))
         {
@@ -184,7 +221,7 @@ public class Blob : MonoBehaviour
 
             if (prey != null && prey.Mass < mass)
             {
-                HandleConsumption(other, 5f);
+                HandleConsumption(other, prey.Mass);
             }
         }
     }
