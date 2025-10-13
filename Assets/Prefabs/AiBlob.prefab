@@ -12,11 +12,11 @@ GameObject:
   - component: {fileID: 5429930320487431695}
   - component: {fileID: 8720514460412117595}
   - component: {fileID: 7551490877842824752}
-  - component: {fileID: 3116919646006405625}
+  - component: {fileID: 2663314604618407191}
   - component: {fileID: 4932468063441350804}
   - component: {fileID: 6010469847132521856}
   m_Layer: 7
-  m_Name: Blob
+  m_Name: AiBlob
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -158,7 +158,7 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
   m_Radius: 0.5
---- !u!114 &3116919646006405625
+--- !u!114 &2663314604618407191
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -167,12 +167,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1496684683162619696}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6af7232a663e12049b7921a8c6a1e3d6, type: 3}
+  m_Script: {fileID: 11500000, guid: 1bca07f283858b74f9b473900c3fec52, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Blob
+  m_EditorClassIdentifier: Assembly-CSharp::AiBlob
   mass: 1
-  arenaCol: {fileID: 0}
-  detectionRadius: 10
   foodMask:
     serializedVersion: 2
     m_Bits: 64
@@ -180,6 +178,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 128
   massPrefab: {fileID: 661757337736217444, guid: a21b5905c7c312c4abb6add5aca27702, type: 3}
+  arenaCol: {fileID: 0}
+  detectionRadius: 10
 --- !u!114 &4932468063441350804
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -43,13 +43,13 @@ public class Condition : IStrategy
 
 public class ThrowFoodStrategy : IStrategy
 {
-    private Blob blob;
+    private AiBlob blob;
     private float scaleFactor;
     private float speedFactor;
     private float baseSpeed;
     private Wobble wobble;
 
-    public ThrowFoodStrategy(Blob blob, float scaleFactor, float speedFactor, float baseSpeed, Wobble wobble)
+    public ThrowFoodStrategy(AiBlob blob, float scaleFactor, float speedFactor, float baseSpeed, Wobble wobble)
     {
         this.blob = blob;
         this.scaleFactor = scaleFactor;
@@ -85,10 +85,10 @@ public class ThrowFoodStrategy : IStrategy
 
 public class FindAndSetFleeTargetStrategy : IStrategy
 {
-    private readonly Blob blob;
+    private readonly AiBlob blob;
     private readonly LayerMask mask;
 
-    public FindAndSetFleeTargetStrategy(Blob blob, LayerMask blobMask)
+    public FindAndSetFleeTargetStrategy(AiBlob blob, LayerMask blobMask)
     {
         this.blob = blob;
         this.mask = blobMask;
@@ -128,11 +128,11 @@ public class FindAndSetFleeTargetStrategy : IStrategy
 
 public class FindAndSetWanderTargetStrategy : IStrategy
 {
-    private readonly Blob blob;
+    private readonly AiBlob blob;
     private readonly Transform chaseTarget;
     private readonly Func<Vector3> getTargetPos;
 
-    public FindAndSetWanderTargetStrategy(Blob blob, Transform chaseTarget, Func<Vector3> getTargetPos)
+    public FindAndSetWanderTargetStrategy(AiBlob blob, Transform chaseTarget, Func<Vector3> getTargetPos)
     {
         this.blob = blob;
         this.chaseTarget = chaseTarget;
@@ -161,11 +161,11 @@ public class FindAndSetWanderTargetStrategy : IStrategy
 
 public class FindAndSetChaseTargetStrategy : IStrategy
 {
-    private readonly Blob blob;
+    private readonly AiBlob blob;
     private readonly LayerMask mask;
     private readonly bool preyCheck;
 
-    public FindAndSetChaseTargetStrategy(Blob blob, LayerMask mask, bool preyCheck = false)
+    public FindAndSetChaseTargetStrategy(AiBlob blob, LayerMask mask, bool preyCheck = false)
     {
         this.blob = blob;
         this.mask = mask;
