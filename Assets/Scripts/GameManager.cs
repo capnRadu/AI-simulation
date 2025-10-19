@@ -8,8 +8,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject foodPrefab;
     [SerializeField] private GameObject blobPrefab;
 
-    private float foodSpawnInterval = 0.5f;
-    private int initialFoodCount = 60;
+    private float foodSpawnInterval = 0.25f;
+    private int initialFoodCount = 100;
     private int blobsCount = 2;
 
     private void Start()

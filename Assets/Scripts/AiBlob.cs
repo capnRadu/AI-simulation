@@ -42,14 +42,11 @@ public class AiBlob : Blob
         Sequence chasePreySequence = new Sequence("ChasePreySequence", 2);
 
         chasePreySequence.AddChild(new Leaf("FindPrey", new FindAndSetChaseTargetStrategy(this, preyMask, true)));
+        chasePreySequence.AddChild(new Leaf("CheckMass", new Condition(() => mass > 1f)));
+        chasePreySequence.AddChild(new Leaf("CheckRandomness", new Condition(() => ShouldThrowFood(0.9f))));
+        chasePreySequence.AddChild(new Leaf("ThrowBaitFood", new ThrowFoodStrategy(this, scaleFactor, speedFactor, baseSpeed, massPrefabMass, () => GetChaseTargetMass(), wobble)));
         chasePreySequence.AddChild(new Leaf("MoveToPrey", new MoveToTargetStrategy(rb, physicsBuffer, transform, () => currentTargetPos, speed, 0.2f)));
         chasePreySequence.AddChild(new Leaf("ResetTarget", new ActionStrategy(ClearChaseTarget)));
-
-        // Throw food sequence
-        var throwFoodSequence = new Sequence("ThrowFoodSequence", 2);
-        throwFoodSequence.AddChild(new Leaf("CheckMass", new Condition(() => mass > 1f)));
-        throwFoodSequence.AddChild(new Leaf("CheckRandomness", new Condition(() => ShouldThrowFood(0.2f))));
-        throwFoodSequence.AddChild(new Leaf("ThrowFood", new ThrowFoodStrategy(this, scaleFactor, speedFactor, baseSpeed, wobble)));
 
         // Wander sequence
         var wanderSequence = new Sequence("WanderSequence", 1);
@@ -60,7 +57,6 @@ public class AiBlob : Blob
         rootSelector.AddChild(fleeSequence);
         rootSelector.AddChild(chaseFoodSequence);
         rootSelector.AddChild(chasePreySequence);
-        rootSelector.AddChild(throwFoodSequence);
         rootSelector.AddChild(wanderSequence);
 
         tree.AddChild(rootSelector);
@@ -109,6 +105,12 @@ public class AiBlob : Blob
     public void ClearChaseTarget()
     {
         chaseTarget = null;
+    }
+
+    private float GetChaseTargetMass()
+    {
+        Blob targetBlob = chaseTarget.GetComponent<Blob>();
+        return targetBlob.Mass;
     }
 
     public Vector3 FindRandomPointInBounds(Bounds bounds)

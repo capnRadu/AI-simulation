@@ -28,6 +28,7 @@ public class Blob : MonoBehaviour
     [SerializeField] protected LayerMask foodMask;
     [SerializeField] protected LayerMask preyMask;
     [SerializeField] protected GameObject massPrefab;
+    protected float massPrefabMass;
 
     private void Awake()
     {
@@ -44,6 +45,7 @@ public class Blob : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         wobble = GetComponent<Wobble>();
         speed = baseSpeed;
+        massPrefabMass = massPrefab.GetComponent<MassForce>().Mass;
     }
 
     public void EjectFood()

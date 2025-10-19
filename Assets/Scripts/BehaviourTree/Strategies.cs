@@ -43,18 +43,24 @@ public class Condition : IStrategy
 
 public class ThrowFoodStrategy : IStrategy
 {
-    private AiBlob blob;
-    private float scaleFactor;
-    private float speedFactor;
-    private float baseSpeed;
-    private Wobble wobble;
+    private readonly AiBlob blob;
+    private readonly float scaleFactor;
+    private readonly float speedFactor;
+    private readonly float baseSpeed;
+    private readonly float massPrefabMass;
+    private readonly Func<float> getChaseTargetMass;
+    private readonly Wobble wobble;
 
-    public ThrowFoodStrategy(AiBlob blob, float scaleFactor, float speedFactor, float baseSpeed, Wobble wobble)
+    private float safetyMargin = 1.1f; // Keep 10% heavier than prey
+
+    public ThrowFoodStrategy(AiBlob blob, float scaleFactor, float speedFactor, float baseSpeed, float massPrefabMass, Func<float> getChaseTargetMass, Wobble wobble)
     {
         this.blob = blob;
         this.scaleFactor = scaleFactor;
         this.speedFactor = speedFactor;
         this.baseSpeed = baseSpeed;
+        this.massPrefabMass = massPrefabMass;
+        this.getChaseTargetMass = getChaseTargetMass;
         this.wobble = wobble;
     }
 
@@ -62,10 +68,18 @@ public class ThrowFoodStrategy : IStrategy
     {
         if (blob.Mass <= 1f) return Node.Status.Failure;
 
-        int spawnCount = UnityEngine.Random.Range(1, 15);
+        int spawnCount = UnityEngine.Random.Range(1, 20);
 
         for (int i = 0; i < spawnCount; i++)
         {
+            float predictedSelfMass = blob.Mass - massPrefabMass;
+            float predictedPreyMass = getChaseTargetMass() + massPrefabMass;
+
+            if (predictedSelfMass <= predictedPreyMass * safetyMargin)
+            {
+                break;
+            }
+
             blob.EjectFood();
 
             float newScale = 1f + blob.Mass * scaleFactor;
