@@ -109,6 +109,8 @@ public class AiBlob : Blob
 
     private float GetChaseTargetMass()
     {
+        if (chaseTarget == null) return 10000f;
+
         Blob targetBlob = chaseTarget.GetComponent<Blob>();
         return targetBlob.Mass;
     }
@@ -177,6 +179,12 @@ public class AiBlob : Blob
     {
         base.HandleConsumption(other, otherMass);
         ClearChaseTarget();
+        ScaleDetectionRadius(0.1f);
+    }
+
+    public void ScaleDetectionRadius(float scaleAmount)
+    {
+        detectionRadius += scaleAmount;
     }
 
     private void OnDrawGizmos()

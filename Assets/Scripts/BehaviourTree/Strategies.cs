@@ -81,6 +81,7 @@ public class ThrowFoodStrategy : IStrategy
             }
 
             blob.EjectFood();
+            blob.ScaleDetectionRadius(-0.1f);
 
             float newScale = 1f + blob.Mass * scaleFactor;
             blob.transform.localScale = new Vector3(newScale, newScale, 1f);
