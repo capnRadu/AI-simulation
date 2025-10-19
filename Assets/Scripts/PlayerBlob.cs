@@ -4,7 +4,7 @@ public class PlayerBlob : Blob
 {
     private void Update()
     {
-        if (Input.GetKey(KeyCode.W) && mass > 1f)
+        if (Input.GetKeyDown(KeyCode.W) && mass > 1f)
         {
             EjectFood();
         }

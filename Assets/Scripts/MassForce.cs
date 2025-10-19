@@ -3,6 +3,7 @@ using UnityEngine;
 public class MassForce : MonoBehaviour
 {
     private Collider2D col;
+    private Bounds arenaBounds;
 
     private float mass = 0.7f;
     public float Mass => mass;
@@ -10,7 +11,7 @@ public class MassForce : MonoBehaviour
     private bool applyForce = false;
     private Vector3 currentTargetPos;
 
-    private float speed = 50f;
+    private float speed = 60f;
     private float loseSpeed = 140f;
     private float randomRotation = 10f;
     private float randomForce = 5f;
@@ -44,17 +45,23 @@ public class MassForce : MonoBehaviour
         {
             enabled = false;
         }
+
+        if (!arenaBounds.Contains(transform.position))
+        {
+            Destroy(gameObject);
+        }
     }
 
-    public void SetupEjectedMass(bool _applyForce, Vector3 _currentTargetPos)
+    public void SetupEjectedMass(bool _applyForce, Vector3 _currentTargetPos, Bounds _arenaColBounds)
     {
         applyForce = _applyForce;
         currentTargetPos = _currentTargetPos;
+        arenaBounds = _arenaColBounds;
 
         gameObject.layer = LayerMask.NameToLayer("Default");
         col.enabled = false;
 
-        Invoke(nameof(EnableMassInteraction), 2f);
+        Invoke(nameof(EnableMassInteraction), 0.2f);
     }
 
     private void EnableMassInteraction()

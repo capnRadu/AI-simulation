@@ -50,7 +50,7 @@ public class Blob : MonoBehaviour
     {
         GameObject ejectedMass = Instantiate(massPrefab, transform.position, Quaternion.identity);
         MassForce massForce = ejectedMass.GetComponent<MassForce>();
-        massForce.SetupEjectedMass(true, GetInstatiateDirection());
+        massForce.SetupEjectedMass(true, GetInstatiateDirection(), ArenaColBounds);
         mass -= massForce.Mass;
     }
 
