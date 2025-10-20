@@ -43,193 +43,192 @@ public class Condition : IStrategy
 
 public class ThrowFoodStrategy : IStrategy
 {
-    private readonly AiBlob blob;
     private readonly float scaleFactor;
     private readonly float speedFactor;
     private readonly float baseSpeed;
-    private readonly float massPrefabMass;
+    private readonly float foodPrefabMass;
     private readonly Func<float> getChaseTargetMass;
-    private readonly Wobble wobble;
+    private readonly Func<float> getMass;
+    private readonly Action ejectFood;
+    private readonly Action<float> scaleDetectionRadius;
+    private readonly Action<Vector3> setScale;
+    private readonly Action<Transform> updateScale;
+    private readonly Action<float> setSpeed;
+    private readonly Transform self;
 
     private float safetyMargin = 1.1f; // Keep 10% heavier than prey
 
-    public ThrowFoodStrategy(AiBlob blob, float scaleFactor, float speedFactor, float baseSpeed, float massPrefabMass, Func<float> getChaseTargetMass, Wobble wobble)
+    public ThrowFoodStrategy(float scaleFactor, float speedFactor, float baseSpeed, float foodPrefabMass, Func<float> getChaseTargetMass, Func<float> getMass, Action ejectFood,
+        Action<float> scaleDetectionRadius, Action<Vector3> setScale, Action<Transform> updateScale, Action<float> setSpeed, Transform self)
     {
-        this.blob = blob;
         this.scaleFactor = scaleFactor;
         this.speedFactor = speedFactor;
         this.baseSpeed = baseSpeed;
-        this.massPrefabMass = massPrefabMass;
+        this.foodPrefabMass = foodPrefabMass;
         this.getChaseTargetMass = getChaseTargetMass;
-        this.wobble = wobble;
+        this.getMass = getMass;
+        this.ejectFood = ejectFood;
+        this.scaleDetectionRadius = scaleDetectionRadius;
+        this.setScale = setScale;
+        this.updateScale = updateScale;
+        this.setSpeed = setSpeed;
+        this.self = self;
     }
 
     public Node.Status Process()
     {
-        if (blob.Mass <= 1f) return Node.Status.Failure;
+        if (getMass() <= 1f) return Node.Status.Failure;
 
         int spawnCount = UnityEngine.Random.Range(1, 20);
 
         for (int i = 0; i < spawnCount; i++)
         {
-            float predictedSelfMass = blob.Mass - massPrefabMass;
-            float predictedPreyMass = getChaseTargetMass() + massPrefabMass;
+            float predictedSelfMass = getMass() - foodPrefabMass;
+            float predictedPreyMass = getChaseTargetMass() + foodPrefabMass;
 
             if (predictedSelfMass <= predictedPreyMass * safetyMargin)
             {
                 break;
             }
 
-            blob.EjectFood();
-            blob.ScaleDetectionRadius(-0.1f);
+            ejectFood();
+            scaleDetectionRadius(-0.1f);
 
-            float newScale = 1f + blob.Mass * scaleFactor;
-            blob.transform.localScale = new Vector3(newScale, newScale, 1f);
-            wobble.UpdateScale(blob.transform);
-            blob.Speed = baseSpeed / (1f + blob.Mass * speedFactor);
+            float currentMass = getMass();
+            float newScaleValue = 1f + currentMass * scaleFactor;
+            setScale(new Vector3(newScaleValue, newScaleValue, 1f));
+            updateScale(self);
+            setSpeed(baseSpeed / (1f + currentMass * speedFactor));
         }
 
         return Node.Status.Success;
-    }
-
-    public void Reset()
-    {
-        // nothing to reset
     }
 }
 
 public class FindAndSetFleeTargetStrategy : IStrategy
 {
-    private readonly AiBlob blob;
     private readonly LayerMask mask;
+    private readonly Func<LayerMask, Transform> findBiggestThreat;
+    private readonly Transform self;
+    private readonly Func<float> getDetectionRadius;
+    private readonly Func<Bounds> getArenaBounds;
+    private readonly Action<Vector3> setFleeTarget;
 
-    public FindAndSetFleeTargetStrategy(AiBlob blob, LayerMask blobMask)
+    public FindAndSetFleeTargetStrategy(LayerMask mask, Func<LayerMask, Transform> findBiggestThreat, Transform self, Func<float> getDetectionRadius, Func<Bounds> getArenaBounds, Action<Vector3> setFleeTarget)
     {
-        this.blob = blob;
-        this.mask = blobMask;
+        this.mask = mask;
+        this.findBiggestThreat = findBiggestThreat;
+        this.self = self;
+        this.getDetectionRadius = getDetectionRadius;
+        this.getArenaBounds = getArenaBounds;
+        this.setFleeTarget = setFleeTarget;
     }
 
     public Node.Status Process()
     {
-        Transform biggestThreat = blob.FindBiggestThreat(mask);
+        Transform biggestThreat = findBiggestThreat(mask);
 
         if (biggestThreat == null)
         {
             return Node.Status.Failure;
         }
 
-        Vector3 directionAway = (blob.transform.position - biggestThreat.position).normalized;
-        Vector3 fleePoint = blob.transform.position + 0.8f * blob.DetectionRadius * directionAway;
+        Vector3 directionAway = (self.position - biggestThreat.position).normalized;
+        Vector3 fleePoint = self.position + 0.8f * getDetectionRadius() * directionAway;
 
-        var bounds = blob.ArenaColBounds;
+        var bounds = getArenaBounds();
         fleePoint.x = Mathf.Clamp(fleePoint.x, bounds.min.x + 1f, bounds.max.x - 1f);
         fleePoint.y = Mathf.Clamp(fleePoint.y, bounds.min.y + 1f, bounds.max.y - 1f);
 
-        if (Vector3.Distance(fleePoint, blob.transform.position) < 0.5f)
+        if (Vector3.Distance(fleePoint, self.position) < 0.5f)
         {
-            Vector3 inward = (bounds.center - blob.transform.position).normalized;
+            Vector3 inward = (bounds.center - self.position).normalized;
             fleePoint += inward * 2f;
         }
 
-        blob.SetFleeTarget(fleePoint);
+        setFleeTarget(fleePoint);
         return Node.Status.Success;
-    }
-
-    public void Reset()
-    {
-        // nothing to reset
     }
 }
 
 public class FindAndSetWanderTargetStrategy : IStrategy
 {
-    private readonly AiBlob blob;
-    private readonly Transform chaseTarget;
-    private readonly Func<Vector3> getTargetPos;
+    private readonly Func<Bounds, Vector3> findRandomPointInBounds;
+    private readonly Func<Bounds> getArenaBounds;
+    private readonly Action<Vector3> setWanderTarget;
 
-    public FindAndSetWanderTargetStrategy(AiBlob blob, Transform chaseTarget, Func<Vector3> getTargetPos)
+    public FindAndSetWanderTargetStrategy(Func<Bounds, Vector3> findRandomPointInBounds, Func<Bounds> getArenaBounds, Action<Vector3> setWanderTarget)
     {
-        this.blob = blob;
-        this.chaseTarget = chaseTarget;
-        this.getTargetPos = getTargetPos;
+        this.findRandomPointInBounds = findRandomPointInBounds;
+        this.getArenaBounds = getArenaBounds;
+        this.setWanderTarget = setWanderTarget;
     }
 
     public Node.Status Process()
     {
-        Vector3 targetPos = getTargetPos();
+        Vector3 target = findRandomPointInBounds(getArenaBounds());
+        setWanderTarget(target);
 
-        if (chaseTarget == null || Vector3.Distance(blob.transform.position, targetPos) <= 0.2f)
-        {
-            Vector3 target = blob.FindRandomPointInBounds(blob.ArenaColBounds);
-            blob.SetWanderTarget(target);
-            return Node.Status.Success;
-        }
-
-        return Node.Status.Failure;
-    }
-
-    public void Reset()
-    {
-        // nothing to reset
+        return Node.Status.Success;
     }
 }
 
 public class FindAndSetChaseTargetStrategy : IStrategy
 {
-    private readonly AiBlob blob;
     private readonly LayerMask mask;
     private readonly bool preyCheck;
+    private readonly Func<LayerMask, Transform> findClosestChaseTarget;
+    private readonly Func<float> getMass;
+    private readonly Action<Transform> setChaseTarget;
 
-    public FindAndSetChaseTargetStrategy(AiBlob blob, LayerMask mask, bool preyCheck = false)
+    public FindAndSetChaseTargetStrategy(LayerMask mask, bool preyCheck, Func<LayerMask, Transform> findClosestChaseTarget, Func<float> getMass, Action<Transform> setChaseTarget)
     {
-        this.blob = blob;
         this.mask = mask;
         this.preyCheck = preyCheck;
+        this.findClosestChaseTarget = findClosestChaseTarget;
+        this.getMass = getMass;
+        this.setChaseTarget = setChaseTarget;
     }
 
     public Node.Status Process()
     {
-        Transform target = blob.FindClosestChaseTarget(mask);
+        Transform target = findClosestChaseTarget(mask);
 
         if (target == null)
         {
             return Node.Status.Failure;
         }
-        else 
+        else
         {
             Blob targetBlob = target.GetComponent<Blob>();
 
             if (preyCheck && targetBlob)
             {
-                if (targetBlob.Mass >= blob.Mass)
+                if (targetBlob.Mass >= getMass())
                 {
+                    setChaseTarget(null);
                     return Node.Status.Failure;
                 }
             }
         }
 
-        blob.SetChaseTarget(target);
+        setChaseTarget(target);
         return Node.Status.Success;
-    }
-
-    public void Reset()
-    {
-        // nothing to reset
     }
 }
 
 public class MoveToTargetStrategy : IStrategy
 {
-    private readonly AiBlob aiBlob;
-    private readonly Wobble wobble;
-
     private readonly Rigidbody2D rb;
     private readonly PhysicsCommandBuffer physicsBuffer;
     private readonly Transform self;
     private readonly Func<Vector3> getTargetPos;
-
-    private readonly float speed;
+    private readonly Func<float> getCurrentSpeed;
     private readonly float stoppingDistance;
+    private readonly Func<float> getMass;
+    private readonly Action<float> setMass;
+    private readonly float scaleFactor;
+    private readonly Action<Transform> updateScale;
 
     private float sprintMultiplier = 2f;
     private float sprintMassLossRate = 10f;
@@ -242,16 +241,19 @@ public class MoveToTargetStrategy : IStrategy
     private float nextSprintTime = 0f;
     private float sprintStopMassThreshold;
 
-    public MoveToTargetStrategy(AiBlob aiBlob, Wobble wobble, Rigidbody2D rb, PhysicsCommandBuffer physicsBuffer, Transform self, Func<Vector3> getTargetPos, float speed, float stoppingDistance)
+    public MoveToTargetStrategy(Rigidbody2D rb, PhysicsCommandBuffer physicsBuffer, Transform self, Func<Vector3> getTargetPos, Func<float> getCurrentSpeed, float stoppingDistance,
+        Func<float> getMass, Action<float> setMass, float scaleFactor, Action<Transform> updateScale)
     {
-        this.aiBlob = aiBlob;
-        this.wobble = wobble;
         this.rb = rb;
         this.physicsBuffer = physicsBuffer;
         this.self = self;
         this.getTargetPos = getTargetPos;
-        this.speed = speed;
+        this.getCurrentSpeed = getCurrentSpeed;
         this.stoppingDistance = stoppingDistance;
+        this.getMass = getMass;
+        this.setMass = setMass;
+        this.scaleFactor = scaleFactor;
+        this.updateScale = updateScale;
     }
 
     public Node.Status Process()
@@ -264,14 +266,13 @@ public class MoveToTargetStrategy : IStrategy
         if (distance <= stoppingDistance)
         {
             StopSprint();
-            physicsBuffer.Clear();
             return Node.Status.Success;
         }
         else
         {
             HandleSprintLogic();
 
-            float currentSpeed = speed * (isSprinting ? sprintMultiplier : 1f);
+            float currentSpeed = getCurrentSpeed() * (isSprinting ? sprintMultiplier : 1f);
 
             physicsBuffer.Queue(() =>
             {
@@ -282,7 +283,7 @@ public class MoveToTargetStrategy : IStrategy
         }
     }
 
-    void HandleSprintLogic()
+    private void HandleSprintLogic()
     {
         if (!isSprinting && Time.time > nextSprintTime && UnityEngine.Random.value < 0.9f)
         {
@@ -291,27 +292,28 @@ public class MoveToTargetStrategy : IStrategy
 
         if (isSprinting)
         {
-            aiBlob.Mass -= sprintMassLossRate * Time.deltaTime;
-            aiBlob.Mass = Mathf.Max(aiBlob.Mass, 0.5f);
+            float currentMass = getMass();
+            currentMass -= sprintMassLossRate * Time.deltaTime;
+            setMass(Mathf.Max(currentMass, 0.5f));
 
-            self.transform.localScale = Vector3.one * (1f + aiBlob.Mass * aiBlob.ScaleFactor);
-            wobble.UpdateScale(self);
+            self.transform.localScale = Vector3.one * (1f + getMass() * scaleFactor);
+            updateScale(self);
 
-            if (Time.time > sprintEndTime || aiBlob.Mass <= sprintStopMassThreshold)
+            if (Time.time > sprintEndTime || getMass() <= sprintStopMassThreshold)
             {
                 StopSprint();
             }
         }
     }
 
-    void StartSprint()
+    private void StartSprint()
     {
         isSprinting = true;
         sprintEndTime = Time.time + UnityEngine.Random.Range(minSprintDuration, maxSprintDuration);
-        sprintStopMassThreshold = aiBlob.Mass * UnityEngine.Random.Range(0.8f, 0.95f);
+        sprintStopMassThreshold = getMass() * UnityEngine.Random.Range(0.8f, 0.95f);
     }
 
-    void StopSprint()
+    private void StopSprint()
     {
         isSprinting = false;
         nextSprintTime = Time.time + sprintCooldown;

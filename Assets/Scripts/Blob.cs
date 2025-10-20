@@ -22,6 +22,8 @@ public class Blob : MonoBehaviour
     protected float speedFactor = 0.003f; // how much speed decreases per unit mass
     protected float scaleFactor = 0.1f; // how much scale increases per unit mass
 
+    public float BaseSpeed => baseSpeed;
+    public float SpeedFactor => speedFactor;
     public float ScaleFactor => scaleFactor;
 
     protected BoxCollider2D arenaCol;
@@ -30,7 +32,7 @@ public class Blob : MonoBehaviour
     [SerializeField] protected LayerMask foodMask;
     [SerializeField] protected LayerMask preyMask;
     [SerializeField] protected GameObject massPrefab;
-    protected float massPrefabMass;
+    protected float foodPrefabMass;
 
     private void Awake()
     {
@@ -47,7 +49,7 @@ public class Blob : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         wobble = GetComponent<Wobble>();
         speed = baseSpeed;
-        massPrefabMass = massPrefab.GetComponent<MassForce>().Mass;
+        foodPrefabMass = massPrefab.GetComponent<MassForce>().Mass;
     }
 
     public void EjectFood()
