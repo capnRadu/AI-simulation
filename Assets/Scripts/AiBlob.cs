@@ -29,13 +29,13 @@ public class AiBlob : Blob
         var fleeSequence = new Sequence("FleeSequence", 3);
 
         fleeSequence.AddChild(new Leaf("FindThreat", new FindAndSetFleeTargetStrategy(this, preyMask)));
-        fleeSequence.AddChild(new Leaf("Flee", new MoveToTargetStrategy(rb, physicsBuffer, transform, () => currentTargetPos, speed, 0.2f)));
+        fleeSequence.AddChild(new Leaf("Flee", new MoveToTargetStrategy(this, wobble, rb, physicsBuffer, transform, () => currentTargetPos, speed, 0.5f)));
 
         // Chase food sequence
         var chaseFoodSequence = new Sequence("ChaseFoodSequence", 2);
 
         chaseFoodSequence.AddChild(new Leaf("FindFood", new FindAndSetChaseTargetStrategy(this, foodMask, false)));
-        chaseFoodSequence.AddChild(new Leaf("MoveToFood", new MoveToTargetStrategy(rb, physicsBuffer, transform, () => currentTargetPos, speed, 0.2f)));
+        chaseFoodSequence.AddChild(new Leaf("MoveToFood", new MoveToTargetStrategy(this, wobble, rb, physicsBuffer, transform, () => currentTargetPos, speed, 0.5f)));
         chaseFoodSequence.AddChild(new Leaf("ResetTarget", new ActionStrategy(ClearChaseTarget)));
 
         // Chase prey sequence
@@ -45,14 +45,14 @@ public class AiBlob : Blob
         chasePreySequence.AddChild(new Leaf("CheckMass", new Condition(() => mass > 1f)));
         chasePreySequence.AddChild(new Leaf("CheckRandomness", new Condition(() => ShouldThrowFood(0.9f))));
         chasePreySequence.AddChild(new Leaf("ThrowBaitFood", new ThrowFoodStrategy(this, scaleFactor, speedFactor, baseSpeed, massPrefabMass, () => GetChaseTargetMass(), wobble)));
-        chasePreySequence.AddChild(new Leaf("MoveToPrey", new MoveToTargetStrategy(rb, physicsBuffer, transform, () => currentTargetPos, speed, 0.2f)));
+        chasePreySequence.AddChild(new Leaf("MoveToPrey", new MoveToTargetStrategy(this, wobble, rb, physicsBuffer, transform, () => currentTargetPos, speed, 0.5f)));
         chasePreySequence.AddChild(new Leaf("ResetTarget", new ActionStrategy(ClearChaseTarget)));
 
         // Wander sequence
         var wanderSequence = new Sequence("WanderSequence", 1);
 
         wanderSequence.AddChild(new Leaf("FindWanderTarget", new FindAndSetWanderTargetStrategy(this, chaseTarget, () => currentTargetPos)));
-        wanderSequence.AddChild(new Leaf("MoveToWanderTarget", new MoveToTargetStrategy(rb, physicsBuffer, transform, () => currentTargetPos, speed, 0.2f)));
+        wanderSequence.AddChild(new Leaf("MoveToWanderTarget", new MoveToTargetStrategy(this, wobble, rb, physicsBuffer, transform, () => currentTargetPos, speed, 0.5f)));
 
         rootSelector.AddChild(fleeSequence);
         rootSelector.AddChild(chaseFoodSequence);

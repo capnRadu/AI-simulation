@@ -9,6 +9,11 @@ public class PhysicsCommandBuffer : MonoBehaviour
         physicsActions += action;
     }
 
+    public void Clear()
+    {
+        physicsActions = null;
+    }
+
     private void FixedUpdate()
     {
         physicsActions?.Invoke();

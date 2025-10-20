@@ -22,6 +22,8 @@ public class Blob : MonoBehaviour
     protected float speedFactor = 0.003f; // how much speed decreases per unit mass
     protected float scaleFactor = 0.1f; // how much scale increases per unit mass
 
+    public float ScaleFactor => scaleFactor;
+
     protected BoxCollider2D arenaCol;
     public Bounds ArenaColBounds => arenaCol.bounds;
 

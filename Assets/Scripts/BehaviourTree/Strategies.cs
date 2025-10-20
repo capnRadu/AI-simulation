@@ -220,15 +220,32 @@ public class FindAndSetChaseTargetStrategy : IStrategy
 
 public class MoveToTargetStrategy : IStrategy
 {
-    readonly Rigidbody2D rb;
-    readonly PhysicsCommandBuffer physicsBuffer;
-    readonly Transform self;
-    readonly Func<Vector3> getTargetPos;
-    readonly float speed;
-    readonly float stoppingDistance;
+    private readonly AiBlob aiBlob;
+    private readonly Wobble wobble;
 
-    public MoveToTargetStrategy(Rigidbody2D rb, PhysicsCommandBuffer physicsBuffer, Transform self, Func<Vector3> getTargetPos, float speed, float stoppingDistance)
+    private readonly Rigidbody2D rb;
+    private readonly PhysicsCommandBuffer physicsBuffer;
+    private readonly Transform self;
+    private readonly Func<Vector3> getTargetPos;
+
+    private readonly float speed;
+    private readonly float stoppingDistance;
+
+    private float sprintMultiplier = 2f;
+    private float sprintMassLossRate = 10f;
+    private float sprintCooldown = 5f;
+    private float minSprintDuration = 1.5f;
+    private float maxSprintDuration = 3f;
+
+    private bool isSprinting = false;
+    private float sprintEndTime = 0f;
+    private float nextSprintTime = 0f;
+    private float sprintStopMassThreshold;
+
+    public MoveToTargetStrategy(AiBlob aiBlob, Wobble wobble, Rigidbody2D rb, PhysicsCommandBuffer physicsBuffer, Transform self, Func<Vector3> getTargetPos, float speed, float stoppingDistance)
     {
+        this.aiBlob = aiBlob;
+        this.wobble = wobble;
         this.rb = rb;
         this.physicsBuffer = physicsBuffer;
         this.self = self;
@@ -241,30 +258,69 @@ public class MoveToTargetStrategy : IStrategy
     {
         Vector3 targetPos = getTargetPos();
 
-        if (targetPos == null)
-        {
-            Debug.LogWarning("Target position is null.");
-            return Node.Status.Failure;
-        }
-
         var direction = (targetPos - self.position).normalized;
         var distance = Vector3.Distance(self.position, targetPos);
 
         if (distance <= stoppingDistance)
         {
+            StopSprint();
+            physicsBuffer.Clear();
             return Node.Status.Success;
         }
-
-        physicsBuffer.Queue(() =>
+        else
         {
-            rb.MovePosition(self.position + speed * Time.fixedDeltaTime * direction);
-        });
+            HandleSprintLogic();
 
-        return Node.Status.Running;
+            float currentSpeed = speed * (isSprinting ? sprintMultiplier : 1f);
+
+            physicsBuffer.Queue(() =>
+            {
+                rb.MovePosition(self.position + currentSpeed * Time.fixedDeltaTime * direction);
+            });
+
+            return Node.Status.Running;
+        }
+    }
+
+    void HandleSprintLogic()
+    {
+        if (!isSprinting && Time.time > nextSprintTime && UnityEngine.Random.value < 0.9f)
+        {
+            StartSprint();
+        }
+
+        if (isSprinting)
+        {
+            aiBlob.Mass -= sprintMassLossRate * Time.deltaTime;
+            aiBlob.Mass = Mathf.Max(aiBlob.Mass, 0.5f);
+
+            self.transform.localScale = Vector3.one * (1f + aiBlob.Mass * aiBlob.ScaleFactor);
+            wobble.UpdateScale(self);
+
+            if (Time.time > sprintEndTime || aiBlob.Mass <= sprintStopMassThreshold)
+            {
+                StopSprint();
+            }
+
+            Debug.DrawLine(self.position, self.position + Vector3.up * 4f, Color.yellow);
+        }
+    }
+
+    void StartSprint()
+    {
+        isSprinting = true;
+        sprintEndTime = Time.time + UnityEngine.Random.Range(minSprintDuration, maxSprintDuration);
+        sprintStopMassThreshold = aiBlob.Mass * UnityEngine.Random.Range(0.8f, 0.95f);
+    }
+
+    void StopSprint()
+    {
+        isSprinting = false;
+        nextSprintTime = Time.time + sprintCooldown;
     }
 
     public void Reset()
     {
-        // No state to reset in this strategy
+        isSprinting = false;
     }
 }
