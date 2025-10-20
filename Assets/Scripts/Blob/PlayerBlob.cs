@@ -1,5 +1,9 @@
 using UnityEngine;
 
+/// <summary>
+/// The MonoBehaviour for the player-controlled blob.
+/// Inherits from 'Blob' but overrides movement and eject logic.
+/// </summary>
 public class PlayerBlob : Blob
 {
     private void Update()
@@ -19,6 +23,9 @@ public class PlayerBlob : Blob
         ClampPosition();
     }
 
+    /// <summary>
+    /// Prevents the player from moving outside the arena bounds.
+    /// </summary>
     private void ClampPosition()
     {
         if (arenaCol == null) return;

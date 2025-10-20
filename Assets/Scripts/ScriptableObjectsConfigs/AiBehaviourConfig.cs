@@ -1,5 +1,9 @@
 using UnityEngine;
 
+/// <summary>
+/// A ScriptableObject to define an AI's personality.
+/// It controls which behaviors are enabled, their priority, and other specific tweaks.
+/// </summary>
 [CreateAssetMenu(fileName = "New AI Behavior Config", menuName = "Blob/AI/AI Behavior Config")]
 public class AiBehaviorConfig : ScriptableObject
 {

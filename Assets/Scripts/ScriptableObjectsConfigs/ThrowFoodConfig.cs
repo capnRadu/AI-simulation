@@ -1,5 +1,8 @@
 using UnityEngine;
 
+/// <summary>
+/// A ScriptableObject to define parameters for the 'Throw Food' (baiting) behavior.
+/// </summary>
 [CreateAssetMenu(fileName = "New Throw Food Config", menuName = "Blob/BT Strategies/Throw Food Config")]
 public class ThrowFoodConfig : ScriptableObject
 {

@@ -1,5 +1,8 @@
 using UnityEngine;
 
+/// <summary>
+/// A ScriptableObject to define parameters for the 'Flee' behavior.
+/// </summary>
 [CreateAssetMenu(fileName = "New Flee Config", menuName = "Blob/BT Strategies/Flee Config")]
 public class FleeConfig : ScriptableObject
 {

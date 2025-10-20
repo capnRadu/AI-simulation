@@ -1,6 +1,10 @@
 using System;
 using UnityEngine;
 
+/// <summary>
+/// Interface for a "strategy" object. This is the "brain" of a Leaf node.
+/// It defines the actual action (e.g., "MoveTo", "FindTarget") to be performed.
+/// </summary>
 public interface IStrategy
 {
     Node.Status Process();
@@ -10,6 +14,11 @@ public interface IStrategy
     }
 }
 
+/// <summary>
+/// A simple strategy that executes a provided Action (delegate)
+/// and always returns Success. Useful for "fire and forget" tasks
+/// like resetting a variable.
+/// </summary>
 public class ActionStrategy : IStrategy
 {
     readonly Action doSomething;
@@ -26,6 +35,11 @@ public class ActionStrategy : IStrategy
     }
 }
 
+/// <summary>
+/// A simple strategy that evaluates a provided predicate
+/// and returns Success if true, or Failure if false.
+/// Used for checks in a Sequence (e.g., "Is mass > 1f?").
+/// </summary>
 public class Condition : IStrategy
 {
     readonly Func<bool> predicate;
@@ -41,6 +55,11 @@ public class Condition : IStrategy
     }
 }
 
+/// <summary>
+/// Strategy to eject food as bait.
+/// Checks a 'safetyMargin' to ensure the blob doesn't throw
+/// too much food and become smaller than its prey.
+/// </summary>
 public class ThrowFoodStrategy : IStrategy
 {
     private readonly float scaleFactor;
@@ -79,13 +98,16 @@ public class ThrowFoodStrategy : IStrategy
     {
         if (getMass() <= 1f) return Node.Status.Failure;
 
+        // Decide how much food to throw
         int spawnCount = UnityEngine.Random.Range(config.minSpawnCount, config.maxSpawnCount + 1);
 
         for (int i = 0; i < spawnCount; i++)
         {
+            // Predict our mass and prey's mass after throwing one piece
             float predictedSelfMass = getMass() - foodPrefabMass;
             float predictedPreyMass = getChaseTargetMass() + foodPrefabMass;
 
+            // If throwing this piece would make us too small, stop
             if (predictedSelfMass <= predictedPreyMass * config.safetyMargin)
             {
                 break;
@@ -94,6 +116,7 @@ public class ThrowFoodStrategy : IStrategy
             ejectFood();
             scaleDetectionRadius(-0.1f);
 
+            // Update scale and speed
             float currentMass = getMass();
             float newScaleValue = 1f + currentMass * scaleFactor;
             setScale(new Vector3(newScaleValue, newScaleValue, 1f));
@@ -105,6 +128,10 @@ public class ThrowFoodStrategy : IStrategy
     }
 }
 
+/// <summary>
+/// Strategy to find the biggest threat and calculate a safe 'fleePoint'
+/// away from it, within the arena bounds.
+/// </summary>
 public class FindAndSetFleeTargetStrategy : IStrategy
 {
     private readonly LayerMask mask;
@@ -132,15 +159,19 @@ public class FindAndSetFleeTargetStrategy : IStrategy
         Transform biggestThreat = findBiggestThreat(mask);
         if (biggestThreat == null)  return Node.Status.Failure;
 
+        // Calculate a flee direction and point
         Vector3 directionAway = (self.position - biggestThreat.position).normalized;
         Vector3 fleePoint = self.position + config.fleeDistanceMultiplier * getDetectionRadius() * directionAway;
 
+        // Clamp the flee point to be inside the arena bounds
         var bounds = getArenaBounds();
         fleePoint.x = Mathf.Clamp(fleePoint.x, bounds.min.x + config.arenaEdgeMargin, bounds.max.x - config.arenaEdgeMargin);
         fleePoint.y = Mathf.Clamp(fleePoint.y, bounds.min.y + config.arenaEdgeMargin, bounds.max.y - config.arenaEdgeMargin);
 
+        // Check if we're trapped against a wall (flee point is too close)
         if (Vector3.Distance(fleePoint, self.position) < config.minFleeDistance)
         {
+            // Flee point is too close, push away from the wall
             Vector3 inward = (bounds.center - self.position).normalized;
             fleePoint += inward * config.wallFleeBoost;
         }
@@ -150,6 +181,10 @@ public class FindAndSetFleeTargetStrategy : IStrategy
     }
 }
 
+/// <summary>
+/// Strategy that picks a new random wander target inside the arena.
+/// This strategy always succeeds, making it a reliable fallback.
+/// </summary>
 public class FindAndSetWanderTargetStrategy : IStrategy
 {
     private readonly Func<Bounds, Vector3> findRandomPointInBounds;
@@ -172,10 +207,15 @@ public class FindAndSetWanderTargetStrategy : IStrategy
     }
 }
 
+
+/// <summary>
+/// Strategy to find the closest valid target (food or prey) and set it
+/// as the AI's 'chaseTarget'.
+/// </summary>
 public class FindAndSetChaseTargetStrategy : IStrategy
 {
     private readonly LayerMask mask;
-    private readonly bool preyCheck;
+    private readonly bool preyCheck; // If true, we must check the target's mass
     private readonly Func<LayerMask, Transform> findClosestChaseTarget;
     private readonly Func<float> getMass;
     private readonly Action<Transform> setChaseTarget;
@@ -205,6 +245,9 @@ public class FindAndSetChaseTargetStrategy : IStrategy
             {
                 if (targetBlob.Mass >= getMass())
                 {
+                    // Target is too big to eat
+                    // Clear target to prevent stale state and fail
+
                     setChaseTarget(null);
                     return Node.Status.Failure;
                 }
@@ -216,6 +259,11 @@ public class FindAndSetChaseTargetStrategy : IStrategy
     }
 }
 
+/// <summary>
+/// Strategy to move the blob towards its 'currentTargetPos'.
+/// Manages movement and sprinting logic.
+/// Returns Running until the 'stoppingDistance' is reached.
+/// </summary>
 public class MoveToTargetStrategy : IStrategy
 {
     private readonly Rigidbody2D rb;
@@ -275,13 +323,18 @@ public class MoveToTargetStrategy : IStrategy
         }
     }
 
+    /// <summary>
+    /// Manages the state of sprinting (timers, mass loss, etc.).
+    /// </summary>
     private void HandleSprintLogic()
     {
+        // Check if we should start sprinting
         if (!isSprinting && Time.time > nextSprintTime && UnityEngine.Random.value < 0.9f)
         {
             StartSprint();
         }
 
+        // Handle logic while sprinting
         if (isSprinting)
         {
             float currentMass = getMass();
@@ -291,6 +344,7 @@ public class MoveToTargetStrategy : IStrategy
             self.transform.localScale = Vector3.one * (1f + getMass() * scaleFactor);
             updateScale(self);
 
+            // Check if we should stop sprinting
             if (Time.time > sprintEndTime || getMass() <= sprintStopMassThreshold)
             {
                 StopSprint();

@@ -1,5 +1,8 @@
 using UnityEngine;
 
+/// <summary>
+/// A ScriptableObject to define all movement-related parameters for a blob.
+/// </summary>
 [CreateAssetMenu(fileName = "New Movement Config", menuName = "Blob/BT Strategies/Movement Config")]
 public class MovementConfig : ScriptableObject
 {

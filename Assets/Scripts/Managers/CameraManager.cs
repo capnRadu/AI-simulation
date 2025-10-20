@@ -1,12 +1,20 @@
 using UnityEngine;
 
+/// <summary>
+/// Manages the main camera, making it follow the player blob
+/// and zoom in/out based on whether the player is alive.
+/// </summary>
 public class CameraManager : MonoBehaviour
 {
     private Camera mainCamera;
 
-    private Vector3 initialPos = new Vector3(22.5f, -22.5f, -10);
-    private float initialSize = 45f;
-    private float targetSize = 33f;
+    [Header("Camera States")]
+    [Tooltip("Position to reset to when the player dies")]
+    [SerializeField] private Vector3 initialPos = new Vector3(22.5f, -22.5f, -10);
+    [Tooltip("Orthographic size (zoom) when player is dead")]
+    [SerializeField] private float initialSize = 45f;
+    [Tooltip("Orthographic size (zoom) when following the player")]
+    [SerializeField] private float targetSize = 33f;
 
     private void Awake()
     {

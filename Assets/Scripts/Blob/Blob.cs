@@ -1,38 +1,47 @@
 using UnityEngine;
 
+/// <summary>
+/// The base class for all 'blob' entities (Player and AI).
+/// Manages core properties like mass, speed, scale, and handles consumption.
+/// </summary>
 public class Blob : MonoBehaviour
 {
+    // --- Core Components ---
     protected Rigidbody2D rb;
     protected Wobble wobble;
+    protected BoxCollider2D arenaCol;
 
+    // --- Serialized Fields (Base Stats) ---
+    [Header("Base Stats")]
     [SerializeField] protected float mass = 1f;
+    [SerializeField] protected float baseSpeed = 15f;
+    [Tooltip("How much speed decreases per unit mass")]
+    [SerializeField] protected float speedFactor = 0.003f;
+    [Tooltip("How much scale increases per unit mass")]
+    [SerializeField] protected float scaleFactor = 0.1f;
+
+    [Header("Object References")]
+    [SerializeField] protected LayerMask foodMask;
+    [SerializeField] protected LayerMask preyMask;
+    [SerializeField] protected GameObject massPrefab;
+
+    // --- Public Properties ---
     public float Mass
     {
         get { return mass; }
         set { mass = value; }
     }
-
-    protected float speed;
+    protected float speed; // The *current* speed, affected by mass
     public float Speed
     {
         get { return speed; }
         set { speed = value; }
     }
-    protected float baseSpeed = 15f;
-    protected float speedFactor = 0.003f; // how much speed decreases per unit mass
-    protected float scaleFactor = 0.1f; // how much scale increases per unit mass
-
     public float BaseSpeed => baseSpeed;
     public float SpeedFactor => speedFactor;
     public float ScaleFactor => scaleFactor;
-
-    protected BoxCollider2D arenaCol;
     public Bounds ArenaColBounds => arenaCol.bounds;
-
-    [SerializeField] protected LayerMask foodMask;
-    [SerializeField] protected LayerMask preyMask;
-    [SerializeField] protected GameObject massPrefab;
-    protected float foodPrefabMass;
+    protected float foodPrefabMass; // The mass of one ejected food piece
 
     private void Awake()
     {
@@ -60,8 +69,13 @@ public class Blob : MonoBehaviour
         mass -= massForce.Mass;
     }
 
+    /// <summary>
+    /// Gets the direction to eject food.
+    /// Overridden by AI (target).
+    /// </summary>
     protected virtual Vector3 GetInstatiateDirection()
     {
+        // Player default: eject towards mouse
         return Camera.main.ScreenToWorldPoint(Input.mousePosition);
     }
 
@@ -97,8 +111,9 @@ public class Blob : MonoBehaviour
 
         float newScale = 1f + mass * scaleFactor;
         transform.localScale = new Vector3(newScale, newScale, 1f);
-        wobble.UpdateScale(transform);
+        wobble.UpdateScale(transform); // Tell wobble component the new base scale
 
+        // Update speed (getting bigger makes us slower)
         speed = baseSpeed / (1f + mass * speedFactor);
     }
 } 

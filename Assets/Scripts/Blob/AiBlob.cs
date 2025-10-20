@@ -1,10 +1,21 @@
+using NUnit.Framework;
 using UnityEngine;
 
+/// <summary>
+/// The main MonoBehaviour for AI-controlled blobs.
+/// This class is responsible for:
+/// 1. Holding the AI's configuration (ScriptableObjects).
+/// 2. Setting up the Behavior Tree in 'SetupBlob'.
+/// 3. Ticking the tree in 'Update'.
+/// 4. Providing helper methods for the strategies (e.g., finding targets, setting state).
+/// </summary>
 public class AiBlob : Blob
 {
+    // --- Behavior Tree ---
     private BehaviourTree tree;
     private PhysicsCommandBuffer physicsBuffer;
 
+    // --- Configuration Assets ---
     [Header("AI Configuration Assets")]
     [Tooltip("Defines behavior priorities and timing")]
     [SerializeField] private AiBehaviorConfig behaviorConfig;
@@ -17,16 +28,27 @@ public class AiBlob : Blob
     [Tooltip("Defines how the blob throws food as bait")]
     [SerializeField] private ThrowFoodConfig throwFoodConfig;
 
+    // --- AI State ---
+    [Header("Blob State (Internal)")]
+    [Tooltip("Friendly name set from the config")]
     public string blobName;
+
+    // This blob's *local* detection radius (can be modified at runtime)
     private float detectionRadius;
     public float DetectionRadius => detectionRadius;
 
+    // State variables for the behavior tree
     private Transform chaseTarget;
     private Vector3 wanderTarget;
     private Vector3 fleeTarget;
-    private Vector3 currentTargetPos;
+    private Vector3 currentTargetPos; // The *actual* target the 'MoveTo' strategy will use
     private float lastThrowCheckTime;
 
+    #region Setup
+
+    /// <summary>
+    /// Overrides the base setup to initialize the AI and build the Behavior Tree.
+    /// </summary>
     protected override void SetupBlob()
     {
         base.SetupBlob();
@@ -99,10 +121,14 @@ public class AiBlob : Blob
         tree.AddChild(rootSelector);
     }
 
+    #endregion
+
     private void Update()
     {
         tree?.Process();
     }
+
+    #region AI Helper Methods (Used by Strategies)
 
     public Transform FindClosestChaseTarget(LayerMask mask)
     {
@@ -199,6 +225,9 @@ public class AiBlob : Blob
         currentTargetPos = fleeTarget;
     }
 
+    /// <summary>
+    /// Checks if enough time has passed to 'roll the dice' for throwing food.
+    /// </summary>
     private bool ShouldThrowFood(float probability)
     {
         if (Time.time - lastThrowCheckTime < behaviorConfig.throwFoodCheckInterval) return false;
@@ -225,6 +254,10 @@ public class AiBlob : Blob
         detectionRadius = Mathf.Max(detectionRadius, 1f);
     }
 
+    #endregion
+
+    #region Debugging
+
     private void OnDrawGizmos()
     {
         Gizmos.color = new Color(1f, 1f, 1f, 0.2f);
@@ -244,4 +277,6 @@ public class AiBlob : Blob
             prevPoint = nextPoint;
         }
     }
+
+    #endregion
 }
