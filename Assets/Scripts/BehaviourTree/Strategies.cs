@@ -301,8 +301,6 @@ public class MoveToTargetStrategy : IStrategy
             {
                 StopSprint();
             }
-
-            Debug.DrawLine(self.position, self.position + Vector3.up * 4f, Color.yellow);
         }
     }
 
