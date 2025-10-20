@@ -55,11 +55,10 @@ public class ThrowFoodStrategy : IStrategy
     private readonly Action<Transform> updateScale;
     private readonly Action<float> setSpeed;
     private readonly Transform self;
-
-    private float safetyMargin = 1.1f; // Keep 10% heavier than prey
+    private readonly ThrowFoodConfig config;
 
     public ThrowFoodStrategy(float scaleFactor, float speedFactor, float baseSpeed, float foodPrefabMass, Func<float> getChaseTargetMass, Func<float> getMass, Action ejectFood,
-        Action<float> scaleDetectionRadius, Action<Vector3> setScale, Action<Transform> updateScale, Action<float> setSpeed, Transform self)
+        Action<float> scaleDetectionRadius, Action<Vector3> setScale, Action<Transform> updateScale, Action<float> setSpeed, Transform self, ThrowFoodConfig config)
     {
         this.scaleFactor = scaleFactor;
         this.speedFactor = speedFactor;
@@ -73,20 +72,21 @@ public class ThrowFoodStrategy : IStrategy
         this.updateScale = updateScale;
         this.setSpeed = setSpeed;
         this.self = self;
+        this.config = config;
     }
 
     public Node.Status Process()
     {
         if (getMass() <= 1f) return Node.Status.Failure;
 
-        int spawnCount = UnityEngine.Random.Range(1, 20);
+        int spawnCount = UnityEngine.Random.Range(config.minSpawnCount, config.maxSpawnCount + 1);
 
         for (int i = 0; i < spawnCount; i++)
         {
             float predictedSelfMass = getMass() - foodPrefabMass;
             float predictedPreyMass = getChaseTargetMass() + foodPrefabMass;
 
-            if (predictedSelfMass <= predictedPreyMass * safetyMargin)
+            if (predictedSelfMass <= predictedPreyMass * config.safetyMargin)
             {
                 break;
             }
@@ -113,8 +113,10 @@ public class FindAndSetFleeTargetStrategy : IStrategy
     private readonly Func<float> getDetectionRadius;
     private readonly Func<Bounds> getArenaBounds;
     private readonly Action<Vector3> setFleeTarget;
+    private readonly FleeConfig config;
 
-    public FindAndSetFleeTargetStrategy(LayerMask mask, Func<LayerMask, Transform> findBiggestThreat, Transform self, Func<float> getDetectionRadius, Func<Bounds> getArenaBounds, Action<Vector3> setFleeTarget)
+    public FindAndSetFleeTargetStrategy(LayerMask mask, Func<LayerMask, Transform> findBiggestThreat, Transform self, Func<float> getDetectionRadius, Func<Bounds> getArenaBounds,
+        Action<Vector3> setFleeTarget, FleeConfig config)
     {
         this.mask = mask;
         this.findBiggestThreat = findBiggestThreat;
@@ -122,28 +124,25 @@ public class FindAndSetFleeTargetStrategy : IStrategy
         this.getDetectionRadius = getDetectionRadius;
         this.getArenaBounds = getArenaBounds;
         this.setFleeTarget = setFleeTarget;
+        this.config = config;
     }
 
     public Node.Status Process()
     {
         Transform biggestThreat = findBiggestThreat(mask);
-
-        if (biggestThreat == null)
-        {
-            return Node.Status.Failure;
-        }
+        if (biggestThreat == null)  return Node.Status.Failure;
 
         Vector3 directionAway = (self.position - biggestThreat.position).normalized;
-        Vector3 fleePoint = self.position + 0.8f * getDetectionRadius() * directionAway;
+        Vector3 fleePoint = self.position + config.fleeDistanceMultiplier * getDetectionRadius() * directionAway;
 
         var bounds = getArenaBounds();
-        fleePoint.x = Mathf.Clamp(fleePoint.x, bounds.min.x + 1f, bounds.max.x - 1f);
-        fleePoint.y = Mathf.Clamp(fleePoint.y, bounds.min.y + 1f, bounds.max.y - 1f);
+        fleePoint.x = Mathf.Clamp(fleePoint.x, bounds.min.x + config.arenaEdgeMargin, bounds.max.x - config.arenaEdgeMargin);
+        fleePoint.y = Mathf.Clamp(fleePoint.y, bounds.min.y + config.arenaEdgeMargin, bounds.max.y - config.arenaEdgeMargin);
 
-        if (Vector3.Distance(fleePoint, self.position) < 0.5f)
+        if (Vector3.Distance(fleePoint, self.position) < config.minFleeDistance)
         {
             Vector3 inward = (bounds.center - self.position).normalized;
-            fleePoint += inward * 2f;
+            fleePoint += inward * config.wallFleeBoost;
         }
 
         setFleeTarget(fleePoint);
@@ -224,46 +223,39 @@ public class MoveToTargetStrategy : IStrategy
     private readonly Transform self;
     private readonly Func<Vector3> getTargetPos;
     private readonly Func<float> getCurrentSpeed;
-    private readonly float stoppingDistance;
     private readonly Func<float> getMass;
     private readonly Action<float> setMass;
     private readonly float scaleFactor;
     private readonly Action<Transform> updateScale;
-
-    private float sprintMultiplier = 2f;
-    private float sprintMassLossRate = 10f;
-    private float sprintCooldown = 5f;
-    private float minSprintDuration = 1.5f;
-    private float maxSprintDuration = 3f;
+    private readonly MovementConfig config;
 
     private bool isSprinting = false;
     private float sprintEndTime = 0f;
     private float nextSprintTime = 0f;
     private float sprintStopMassThreshold;
 
-    public MoveToTargetStrategy(Rigidbody2D rb, PhysicsCommandBuffer physicsBuffer, Transform self, Func<Vector3> getTargetPos, Func<float> getCurrentSpeed, float stoppingDistance,
-        Func<float> getMass, Action<float> setMass, float scaleFactor, Action<Transform> updateScale)
+    public MoveToTargetStrategy(Rigidbody2D rb, PhysicsCommandBuffer physicsBuffer, Transform self, Func<Vector3> getTargetPos, Func<float> getCurrentSpeed, Func<float> getMass,
+        Action<float> setMass, float scaleFactor, Action<Transform> updateScale, MovementConfig config)
     {
         this.rb = rb;
         this.physicsBuffer = physicsBuffer;
         this.self = self;
         this.getTargetPos = getTargetPos;
         this.getCurrentSpeed = getCurrentSpeed;
-        this.stoppingDistance = stoppingDistance;
         this.getMass = getMass;
         this.setMass = setMass;
         this.scaleFactor = scaleFactor;
         this.updateScale = updateScale;
+        this.config = config;
     }
 
     public Node.Status Process()
     {
         Vector3 targetPos = getTargetPos();
-
         var direction = (targetPos - self.position).normalized;
         var distance = Vector3.Distance(self.position, targetPos);
 
-        if (distance <= stoppingDistance)
+        if (distance <= config.stoppingDistance)
         {
             StopSprint();
             return Node.Status.Success;
@@ -272,7 +264,7 @@ public class MoveToTargetStrategy : IStrategy
         {
             HandleSprintLogic();
 
-            float currentSpeed = getCurrentSpeed() * (isSprinting ? sprintMultiplier : 1f);
+            float currentSpeed = getCurrentSpeed() * (isSprinting ? config.sprintMultiplier : 1f);
 
             physicsBuffer.Queue(() =>
             {
@@ -293,7 +285,7 @@ public class MoveToTargetStrategy : IStrategy
         if (isSprinting)
         {
             float currentMass = getMass();
-            currentMass -= sprintMassLossRate * Time.deltaTime;
+            currentMass -= config.sprintMassLossRate * Time.deltaTime;
             setMass(Mathf.Max(currentMass, 0.5f));
 
             self.transform.localScale = Vector3.one * (1f + getMass() * scaleFactor);
@@ -309,14 +301,14 @@ public class MoveToTargetStrategy : IStrategy
     private void StartSprint()
     {
         isSprinting = true;
-        sprintEndTime = Time.time + UnityEngine.Random.Range(minSprintDuration, maxSprintDuration);
+        sprintEndTime = Time.time + UnityEngine.Random.Range(config.minSprintDuration, config.maxSprintDuration);
         sprintStopMassThreshold = getMass() * UnityEngine.Random.Range(0.8f, 0.95f);
     }
 
     private void StopSprint()
     {
         isSprinting = false;
-        nextSprintTime = Time.time + sprintCooldown;
+        nextSprintTime = Time.time + config.sprintCooldown;
     }
 
     public void Reset()

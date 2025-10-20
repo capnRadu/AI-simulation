@@ -178,8 +178,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 128
   massPrefab: {fileID: 661757337736217444, guid: a21b5905c7c312c4abb6add5aca27702, type: 3}
-  arenaCol: {fileID: 0}
-  detectionRadius: 10
+  behaviorConfig: {fileID: 11400000, guid: 38d8ef5920713064abb004f2102f5a30, type: 2}
+  perceptionConfig: {fileID: 11400000, guid: fd670482cf5739d41bc09997739b49fe, type: 2}
+  movementConfig: {fileID: 11400000, guid: c971a3c911c55974eac3acc546e3eb2d, type: 2}
+  fleeConfig: {fileID: 11400000, guid: 8fda8efe5d5bc1e49b76740c5b552aec, type: 2}
+  throwFoodConfig: {fileID: 11400000, guid: d18991bbd118f3049bd58420af28ef7b, type: 2}
 --- !u!114 &4932468063441350804
 MonoBehaviour:
   m_ObjectHideFlags: 0
