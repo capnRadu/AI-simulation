@@ -1,0 +1,18 @@
+Actively hunts other blobs. Ignores food. Will flee from larger threats.
+
+Updated variables:
+- enableFlee: true (Still needs to fear bigger threats)
+- enableChaseFood: false (It's a carnivore)
+- enableChasePrey: true
+- enableWander: true
+- fleePriority: 3 (Survival is still #1)
+- chaseFoodPriority: 1 (Disabled)
+- chasePreyPriority: 2 (Its secondary goal)
+- wanderPriority: 1
+- throwFoodChance: 0.1 (Rarely throws food, prefers to chase)
+- detectionRadius: 15.0 (A very large radius to find prey)
+- sprintMultiplier: 2.5 (A powerful sprint for catching prey)
+- sprintMassLossRate: 12.0 (Burns more mass for its speed)
+- sprintCooldown: 2.5 (Can sprint again very quickly)
+- maxSprintDuration: 4.0 (Good for long chases)
+- maxSpawnCount: 5 (Doesn't throw much food)

@@ -171,6 +171,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AiBlob
   mass: 1
+  baseSpeed: 15
+  speedFactor: 0.003
+  scaleFactor: 0.1
   foodMask:
     serializedVersion: 2
     m_Bits: 64
@@ -183,6 +186,7 @@ MonoBehaviour:
   movementConfig: {fileID: 11400000, guid: c971a3c911c55974eac3acc546e3eb2d, type: 2}
   fleeConfig: {fileID: 11400000, guid: 8fda8efe5d5bc1e49b76740c5b552aec, type: 2}
   throwFoodConfig: {fileID: 11400000, guid: d18991bbd118f3049bd58420af28ef7b, type: 2}
+  blobName: 
 --- !u!114 &4932468063441350804
 MonoBehaviour:
   m_ObjectHideFlags: 0

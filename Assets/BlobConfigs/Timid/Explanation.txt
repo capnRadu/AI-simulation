@@ -1,0 +1,14 @@
+Avoids conflict at all costs. Focuses only on eating food. Flees from danger.
+
+Updated variables:
+- enableChasePrey: false (It will never hunt)
+- fleePriority: 3 (Fleeing is its #1 priority)
+- chaseFoodPriority: 2 (Its main goal when not fleeing)
+- chasePreyPriority: 1 (Disabled, but set low)
+- wanderPriority: 1
+- throwFoodChance: 0.0 (Never throws food)
+- detectionRadius: 12.5 (A larger radius so it can spot threats from farther away)
+- sprintMultiplier: 2.3 (A slightly better sprint for escaping)
+- sprintCooldown: 2.0 (Can sprint again quickly)
+- maxSprintDuration: 2.0 (Prefers short bursts to get away)
+- fleeDistanceMultiplier: 1.0 (Tries to get a bit farther away)

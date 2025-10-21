@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ca6aff39cef18874ab27097f87b5bc8d, type: 3}
-  m_Name: Default AI Behavior Config
+  m_Name: Timid AI Behavior Config
   m_EditorClassIdentifier: Assembly-CSharp::AiBehaviorConfig
-  configName: Default Blob
+  configName: Timid Blob
   enableFlee: 1
   enableChaseFood: 1
-  enableChasePrey: 1
+  enableChasePrey: 0
   enableWander: 1
   fleePriority: 3
   chaseFoodPriority: 2
-  chasePreyPriority: 2
+  chasePreyPriority: 1
   wanderPriority: 1
   throwFoodCheckInterval: 2
-  throwFoodChance: 0.9
+  throwFoodChance: 0

@@ -1,0 +1,12 @@
+A specialized hunter. Has a very high chance to use its own mass to bait smaller prey into getting close.
+
+Updated variables:
+- fleePriority: 4
+- chaseFoodPriority: 2
+- chasePreyPriority: 3
+- wanderPriority: 1
+- throwFoodCheckInterval: 0.5 (Checks constantly if it should throw)
+- throwFoodChance: 1 (Guaranteed to throw food)
+- safetyMargin: 1.5 (Stops throwing food much earlier. It wants to stay significantly larger than its prey to be safe)
+- minSpawnCount: 3 (Throws a decent chunk)
+- maxSpawnCount: 10
