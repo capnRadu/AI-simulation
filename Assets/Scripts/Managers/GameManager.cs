@@ -19,6 +19,19 @@ public class GameManager : MonoBehaviour
     [Tooltip("How many AI blobs to spawn at the start")]
     [SerializeField] private int blobsCount = 2;
 
+    [Header("Time Control")]
+    [Tooltip("The amount to increase/decrease time scale with each key press")]
+    [SerializeField] private float timeScaleIncrement = 0.25f;
+    [SerializeField] private float minTimeScale = 0.25f;
+    [SerializeField] private float maxTimeScale = 4f;
+    [SerializeField] private KeyCode speedUpKey = KeyCode.Equals;
+    [SerializeField] private KeyCode slowDownKey = KeyCode.Minus;
+    [SerializeField] private KeyCode resetSpeedKey = KeyCode.Alpha1;
+    [SerializeField] private KeyCode pauseKey = KeyCode.P;
+
+    private bool isPaused = false;
+    private float lastTimeScale = 1f;
+
     private BoxCollider2D col; // The arena bounds
 
     private void Start()
@@ -39,6 +52,8 @@ public class GameManager : MonoBehaviour
         {
             InstantiateGameObject(blobPrefab);
         }
+
+        HandleTimeControl();
     }
 
     /// <summary>
@@ -71,5 +86,50 @@ public class GameManager : MonoBehaviour
     {
         Vector3 spawnPos = new Vector3(Random.Range(col.bounds.min.x, col.bounds.max.x), Random.Range(col.bounds.min.y, col.bounds.max.y), 0f);
         Instantiate(prefab, spawnPos, Quaternion.identity);
+    }
+
+    /// <summary>
+    /// Checks for user input to modify the simulation's Time.timeScale.
+    /// </summary>
+    private void HandleTimeControl()
+    {
+        if (Input.GetKeyDown(speedUpKey))
+        {
+            if (isPaused) isPaused = false;
+
+            float newTimeScale = Time.timeScale + timeScaleIncrement;
+            Time.timeScale = Mathf.Clamp(newTimeScale, minTimeScale, maxTimeScale);
+            Debug.Log("Time Scale set to: " + Time.timeScale);
+        }
+        else if (Input.GetKeyDown(slowDownKey))
+        {
+            if (isPaused) isPaused = false;
+
+            float newTimeScale = Time.timeScale - timeScaleIncrement;
+            Time.timeScale = Mathf.Clamp(newTimeScale, minTimeScale, maxTimeScale);
+            Debug.Log("Time Scale set to: " + Time.timeScale);
+        }
+        else if (Input.GetKeyDown(resetSpeedKey))
+        {
+            isPaused = false;
+            Time.timeScale = 1f;
+            Debug.Log("Time Scale reset to 1.0");
+        }
+        else if (Input.GetKeyDown(pauseKey))
+        {
+            isPaused = !isPaused;
+
+            if (isPaused)
+            {
+                lastTimeScale = Time.timeScale;
+                Time.timeScale = 0f;
+                Debug.Log("Simulation Paused");
+            }
+            else
+            {
+                Time.timeScale = lastTimeScale;
+                Debug.Log("Simulation Resumed. Time Scale: " + Time.timeScale);
+            }
+        }
     }
 }
