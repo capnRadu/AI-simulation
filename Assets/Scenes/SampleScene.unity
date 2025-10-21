@@ -269,6 +269,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d72bc3355ec64d4b9f9b049b74b022e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraManager
+  initialPos: {x: 22.5, y: -22.5, z: -10}
+  initialSize: 45
+  targetSize: 33
 --- !u!1 &566308007
 GameObject:
   m_ObjectHideFlags: 0
@@ -634,6 +637,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
   foodPrefab: {fileID: 661757337736217444, guid: a21b5905c7c312c4abb6add5aca27702, type: 3}
   blobPrefab: {fileID: 1496684683162619696, guid: f24c63c0b59da7848a602b96784c99d3, type: 3}
+  foodSpawnInterval: 0.25
+  initialFoodCount: 100
+  blobsCount: 2
+  timeScaleIncrement: 0.25
+  minTimeScale: 0.25
+  maxTimeScale: 4
+  speedUpKey: 61
+  slowDownKey: 45
+  resetSpeedKey: 49
+  pauseKey: 112
 --- !u!1 &1228577714
 GameObject:
   m_ObjectHideFlags: 0
@@ -1358,6 +1371,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerBlob
   mass: 1
+  baseSpeed: 15
+  speedFactor: 0.003
+  scaleFactor: 0.1
   foodMask:
     serializedVersion: 2
     m_Bits: 64
@@ -1365,6 +1381,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 128
   massPrefab: {fileID: 661757337736217444, guid: a21b5905c7c312c4abb6add5aca27702, type: 3}
+  sprintMultiplier: 2
+  sprintMassLossRate: 7
+  minSprintMass: 0.5
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

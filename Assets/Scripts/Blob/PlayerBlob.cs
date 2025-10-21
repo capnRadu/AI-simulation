@@ -2,15 +2,50 @@ using UnityEngine;
 
 /// <summary>
 /// The MonoBehaviour for the player-controlled blob.
-/// Inherits from 'Blob' but overrides movement and eject logic.
 /// </summary>
 public class PlayerBlob : Blob
 {
+    [Header("Sprint Settings")]
+    [Tooltip("The speed multiplier to apply when sprinting")]
+    [SerializeField] private float sprintMultiplier = 2f;
+    [Tooltip("Mass lost per second while sprinting")]
+    [SerializeField] private float sprintMassLossRate = 10f;
+    [Tooltip("The minimum mass required to be able to sprint")]
+    [SerializeField] private float minSprintMass = 0.5f;
+
+    private bool isSprinting = false;
+
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.W) && mass > 1f)
         {
             EjectFood();
+        }
+
+        if (Input.GetMouseButtonDown(0) && mass > minSprintMass)
+        {
+            isSprinting = true;
+        }
+
+        if (Input.GetMouseButtonUp(0))
+        {
+            isSprinting = false;
+        }
+
+        if (isSprinting)
+        {
+            mass -= sprintMassLossRate * Time.deltaTime;
+            mass = Mathf.Max(mass, minSprintMass); // Clamp mass
+
+            float newScale = 1f + mass * scaleFactor;
+            transform.localScale = new Vector3(newScale, newScale, 1f);
+            wobble.UpdateScale(transform);
+            speed = baseSpeed / (1f + mass * speedFactor);
+
+            if (mass <= minSprintMass)
+            {
+                isSprinting = false;
+            }
         }
     }
 
@@ -18,7 +53,9 @@ public class PlayerBlob : Blob
     {
         Vector2 lookDir = Camera.main.ScreenToWorldPoint(Input.mousePosition) - transform.position;
         lookDir.Normalize();
-        rb.linearVelocity = lookDir * speed;
+
+        float currentSpeedMultiplier = isSprinting ? sprintMultiplier : 1f;
+        rb.linearVelocity = currentSpeedMultiplier * speed * lookDir;
 
         ClampPosition();
     }
