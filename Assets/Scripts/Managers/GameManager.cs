@@ -2,32 +2,30 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// Manages the game state, including spawning initial food and blobs,
+/// Manages the game state, including managing the simulation speed, spawning initial food,
 /// and continuously spawning food over time. Also holds the arena bounds.
 /// </summary>
 public class GameManager : MonoBehaviour
 {
     [Header("Spawning")]
     [SerializeField] private GameObject foodPrefab;
-    [SerializeField] private GameObject blobPrefab;
+    [SerializeField] private GameObject playerBlobPrefab;
+    [SerializeField] private GameObject defaultBlobPrefab;
+    [SerializeField] private GameObject aggressiveBlobPrefab;
+    [SerializeField] private GameObject baiterBlobPrefab;
+    [SerializeField] private GameObject timidBlobPrefab;
 
     [Space]
     [Tooltip("How often (in seconds) to spawn a new piece of food")]
     [SerializeField] private float foodSpawnInterval = 0.25f;
     [Tooltip("How much food to spawn at the start of the game")]
     [SerializeField] private int initialFoodCount = 100;
-    [Tooltip("How many AI blobs to spawn at the start")]
-    [SerializeField] private int blobsCount = 2;
 
     [Header("Time Control")]
     [Tooltip("The amount to increase/decrease time scale with each key press")]
     [SerializeField] private float timeScaleIncrement = 0.25f;
     [SerializeField] private float minTimeScale = 0.25f;
     [SerializeField] private float maxTimeScale = 4f;
-    [SerializeField] private KeyCode speedUpKey = KeyCode.Equals;
-    [SerializeField] private KeyCode slowDownKey = KeyCode.Minus;
-    [SerializeField] private KeyCode resetSpeedKey = KeyCode.Alpha1;
-    [SerializeField] private KeyCode pauseKey = KeyCode.P;
 
     private bool isPaused = false;
     private float lastTimeScale = 1f;
@@ -40,20 +38,9 @@ public class GameManager : MonoBehaviour
 
         // Spawn initial objects
         SpawnMultipleGameObjects(foodPrefab, initialFoodCount);
-        SpawnMultipleGameObjects(blobPrefab, blobsCount);
 
         // Start the food spawning coroutine
         StartCoroutine(SpawnFoodRoutine());
-    }
-
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            InstantiateGameObject(blobPrefab);
-        }
-
-        HandleTimeControl();
     }
 
     /// <summary>
@@ -88,48 +75,78 @@ public class GameManager : MonoBehaviour
         Instantiate(prefab, spawnPos, Quaternion.identity);
     }
 
-    /// <summary>
-    /// Checks for user input to modify the simulation's Time.timeScale.
-    /// </summary>
-    private void HandleTimeControl()
+    // Blob spawning methods accessible from UI buttons
+    public void SpawnPlayerBlob()
     {
-        if (Input.GetKeyDown(speedUpKey))
+        if (FindFirstObjectByType<PlayerBlob>())
         {
-            if (isPaused) isPaused = false;
-
-            float newTimeScale = Time.timeScale + timeScaleIncrement;
-            Time.timeScale = Mathf.Clamp(newTimeScale, minTimeScale, maxTimeScale);
-            Debug.Log("Time Scale set to: " + Time.timeScale);
+            Debug.LogWarning("Player Blob already exists in the scene!");
+            return;
         }
-        else if (Input.GetKeyDown(slowDownKey))
-        {
-            if (isPaused) isPaused = false;
 
-            float newTimeScale = Time.timeScale - timeScaleIncrement;
-            Time.timeScale = Mathf.Clamp(newTimeScale, minTimeScale, maxTimeScale);
-            Debug.Log("Time Scale set to: " + Time.timeScale);
-        }
-        else if (Input.GetKeyDown(resetSpeedKey))
-        {
-            isPaused = false;
-            Time.timeScale = 1f;
-            Debug.Log("Time Scale reset to 1.0");
-        }
-        else if (Input.GetKeyDown(pauseKey))
-        {
-            isPaused = !isPaused;
+        InstantiateGameObject(playerBlobPrefab);
+    }
 
-            if (isPaused)
-            {
-                lastTimeScale = Time.timeScale;
-                Time.timeScale = 0f;
-                Debug.Log("Simulation Paused");
-            }
-            else
-            {
-                Time.timeScale = lastTimeScale;
-                Debug.Log("Simulation Resumed. Time Scale: " + Time.timeScale);
-            }
+    public void SpawnDefaultBlob()
+    {
+        InstantiateGameObject(defaultBlobPrefab);
+    }
+
+    public void SpawnAggressiveBlob()
+    {
+        InstantiateGameObject(aggressiveBlobPrefab);
+    }
+
+    public void SpawnBaiterBlob()
+    {
+        InstantiateGameObject(baiterBlobPrefab);
+    }
+
+    public void SpawnTimidBlob()
+    {
+        InstantiateGameObject(timidBlobPrefab);
+    }
+
+    // Time control methods accessible from UI buttons
+    public void SpeedUpSimulation()
+    {
+        if (isPaused) isPaused = false;
+
+        float newTimeScale = Time.timeScale + timeScaleIncrement;
+        Time.timeScale = Mathf.Clamp(newTimeScale, minTimeScale, maxTimeScale);
+        Debug.Log("Time Scale set to: " + Time.timeScale);
+    }
+
+    public void SlowDownSimulation()
+    {
+        if (isPaused) isPaused = false;
+
+        float newTimeScale = Time.timeScale - timeScaleIncrement;
+        Time.timeScale = Mathf.Clamp(newTimeScale, minTimeScale, maxTimeScale);
+        Debug.Log("Time Scale set to: " + Time.timeScale);
+    }
+
+    public void ResetSimulationSpeed()
+    {
+        isPaused = false;
+        Time.timeScale = 1f;
+        Debug.Log("Time Scale reset to 1.0");
+    }
+
+    public void PauseUnpauseSimulation()
+    {
+        isPaused = !isPaused;
+
+        if (isPaused)
+        {
+            lastTimeScale = Time.timeScale;
+            Time.timeScale = 0f;
+            Debug.Log("Simulation Paused");
+        }
+        else
+        {
+            Time.timeScale = lastTimeScale;
+            Debug.Log("Simulation Resumed. Time Scale: " + Time.timeScale);
         }
     }
 }

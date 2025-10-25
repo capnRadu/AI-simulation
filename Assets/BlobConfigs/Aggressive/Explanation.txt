@@ -2,7 +2,6 @@ Actively hunts other blobs. Ignores food. Will flee from larger threats.
 
 Updated variables:
 - enableFlee: true (Still needs to fear bigger threats)
-- enableChaseFood: false (It's a carnivore)
 - enableChasePrey: true
 - enableWander: true
 - fleePriority: 3 (Survival is still #1)
