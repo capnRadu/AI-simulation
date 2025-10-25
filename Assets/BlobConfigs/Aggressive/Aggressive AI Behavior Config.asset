@@ -14,12 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AiBehaviorConfig
   configName: Aggressive Blob
   enableFlee: 1
-  enableChaseFood: 0
+  enableChaseFood: 1
   enableChasePrey: 1
   enableWander: 1
-  fleePriority: 3
-  chaseFoodPriority: 1
-  chasePreyPriority: 2
+  fleePriority: 4
+  chaseFoodPriority: 2
+  chasePreyPriority: 3
   wanderPriority: 1
   throwFoodCheckInterval: 2
   throwFoodChance: 0.1
