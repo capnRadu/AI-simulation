@@ -1,4 +1,4 @@
-Actively hunts other blobs. Ignores food. Will flee from larger threats.
+Actively hunts other blobs. Will flee from larger threats.
 
 Updated variables:
 - enableFlee: true (Still needs to fear bigger threats)
